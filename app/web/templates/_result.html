@@ -1,0 +1,52 @@
+{% macro eur(v) %}{% if v is not none %}{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") }}{% else %}–{% endif %}{% endmacro %}
+<section style="margin-top:24px">
+{% if r.error %}
+  <div class="card"><span class="badge error">Nicht lesbar</span>
+    <p>{{ r.error }}</p>
+    {% if r.format.value in ("pdf", "image") %}<p>Diese Datei enthält keine strukturierten Rechnungsdaten. Die automatische Erkennung von PDF/Scan kommt in einem späteren Modul.</p>{% endif %}
+  </div>
+{% else %}
+  {% set inv = r.invoice %}
+  <div class="card">
+    {% if r.ok %}<span class="badge ok">Keine Fehler gefunden</span>{% else %}<span class="badge error">Fehler gefunden</span>{% endif %}
+    <span class="badge" style="background:var(--bg)">{{ r.format.value | upper }}</span>
+
+    <div class="grid" style="margin-top:16px">
+      <div><strong>Rechnungssteller</strong><br>{{ inv.seller.name or "–" }}<br>
+        <small>{{ inv.seller.address.street or "" }} {{ inv.seller.address.postal_code or "" }} {{ inv.seller.address.city or "" }}<br>
+        USt-IdNr.: {{ inv.seller.vat_id or "–" }}</small></div>
+      <div><strong>Rechnungsempfänger</strong><br>{{ inv.buyer.name or "–" }}<br>
+        <small>Leitweg-ID / Referenz: {{ inv.buyer_reference or "–" }}</small></div>
+      <div><strong>Rechnung Nr.</strong> {{ inv.number }}<br><small>vom {{ inv.issue_date.strftime("%d.%m.%Y") if inv.issue_date else "–" }}{% if inv.due_date %}, fällig {{ inv.due_date.strftime("%d.%m.%Y") }}{% endif %}</small></div>
+      <div><strong>Zahlung</strong><br><small>IBAN: {{ inv.payment.iban or "–" }}</small></div>
+    </div>
+
+    <h2>Positionen</h2>
+    <table>
+      <tr><th>#</th><th>Bezeichnung</th><th class="num">Menge</th><th class="num">Preis</th><th class="num">Netto</th><th class="num">USt</th></tr>
+      {% for l in inv.lines %}
+      <tr><td>{{ l.line_id }}</td><td>{{ l.name }}</td><td class="num">{{ l.quantity|string if l.quantity is not none else "" }} {{ l.unit_code or "" }}</td>
+        <td class="num">{{ eur(l.unit_price) }}</td><td class="num">{{ eur(l.net_amount) }}</td><td class="num">{{ l.vat_rate|string if l.vat_rate is not none else "" }} %</td></tr>
+      {% endfor %}
+    </table>
+
+    <h2>Summen ({{ inv.currency }})</h2>
+    <table>
+      <tr><td>Netto</td><td class="num">{{ eur(inv.totals.net_total) }}</td></tr>
+      <tr><td>Umsatzsteuer</td><td class="num">{{ eur(inv.totals.vat_total) }}</td></tr>
+      <tr><td>Brutto</td><td class="num">{{ eur(inv.totals.gross_total) }}</td></tr>
+      <tr><td><strong>Zahlbetrag</strong></td><td class="num"><strong>{{ eur(inv.totals.amount_due) }}</strong></td></tr>
+    </table>
+
+    <h2>Prüfergebnis</h2>
+    <ul class="findings">
+      {% for f in r.findings %}<li><span class="badge {{ f.severity.value }}">{{ f.severity.value }}</span> {{ f.message }}</li>{% endfor %}
+      {% if r.kosit %}
+        <li><span class="badge {{ 'ok' if r.kosit.acceptable else 'error' }}">KoSIT</span> {{ "Konform zu XRechnung" if r.kosit.acceptable else "Nicht konform" }}</li>
+        {% for m in r.kosit.messages %}<li><span class="badge {{ m.level }}">{{ m.code or m.level }}</span> {{ m.text }}</li>{% endfor %}
+      {% elif r.kosit_skipped_reason %}<li><span class="badge warning">KoSIT</span> {{ r.kosit_skipped_reason }}</li>{% endif %}
+      {% if not r.findings and not r.kosit %}<li><span class="badge ok">ok</span> Beträge und Pflichtangaben stimmen.</li>{% endif %}
+    </ul>
+  </div>
+{% endif %}
+</section>

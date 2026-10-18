@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>E-Rechnung prüfen</h1>
+<p class="lead">XRechnung (UBL/CII) oder ZUGFeRD-PDF hochladen: Inhalt lesbar anzeigen, Beträge nachrechnen, gegen die offiziellen Regeln prüfen.</p>
+
+<form class="card drop" hx-post="/pruefen" hx-encoding="multipart/form-data" hx-target="#result" hx-indicator="#spin">
+  <input type="file" name="file" accept=".xml,.pdf" required>
+  <button type="submit">Prüfen</button>
+  <span id="spin" class="htmx-indicator">Wird geprüft …</span>
+</form>
+
+<div id="result"></div>
+{% endblock %}
