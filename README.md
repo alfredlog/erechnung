@@ -4,7 +4,7 @@ Read, check and export German e-invoices (XRechnung, ZUGFeRD / Factur-X) for sma
 From 2027 German B2B invoices must be structured (EN 16931); this service turns them into something
 a human can read, verifies them, and (next modules) exports them to DATEV.
 
-**Status: week 1** – parsing + business checks + KoSIT integration + check page.
+**Status: week 2** – parsing, business checks, KoSIT integration, check page, readable PDF (`POST /api/v1/render`).
 
 ## What works today
 
@@ -61,6 +61,6 @@ Memory limits are set for a 4 GB VPS (api 512 MB, KoSIT 1 GB, Postgres 512 MB).
 ## Roadmap
 
 1. Week 1 – parse + check ✅
-2. Week 2 – free tools on PDF Libre (viewer, checker, ZUGFeRD creator)
+2. Week 2 – readable PDF + free tools on PDF Libre (viewer ✅, checker ✅, ZUGFeRD creator next)
 3. Weeks 3–4 – accounts, upload inbox, invoice list, DATEV export → pilot customers
 4. Then – PDF/scan extraction (LLM, EU-hosted), IMAP inbox, agent with human review
