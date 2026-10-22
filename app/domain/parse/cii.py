@@ -42,6 +42,8 @@ def _party(p) -> Party:
         ),
         email=f.text(p, "ram:URIUniversalCommunication/ram:URIID")
         or f.text(p, "ram:DefinedTradeContact/ram:EmailURIUniversalCommunication/ram:URIID"),
+        contact_name=f.text(p, "ram:DefinedTradeContact/ram:PersonName"),
+        phone=f.text(p, "ram:DefinedTradeContact/ram:TelephoneUniversalCommunication/ram:CompleteNumber"),
     )
 
 
@@ -73,6 +75,7 @@ def parse_cii(root: etree._Element, source: SourceFormat = SourceFormat.CII) -> 
             rate=f.dec(t, "ram:RateApplicablePercent"),
             taxable_amount=f.dec(t, "ram:BasisAmount"),
             tax_amount=f.dec(t, "ram:CalculatedAmount"),
+            exemption_reason=f.text(t, "ram:ExemptionReason"),
         )
         for t in f.all(settlement, "ram:ApplicableTradeTax")
     ]
@@ -91,6 +94,10 @@ def parse_cii(root: etree._Element, source: SourceFormat = SourceFormat.CII) -> 
         type_code=f.text(doc, "ram:TypeCode"),
         issue_date=to_date(f.text(doc, "ram:IssueDateTime/udt:DateTimeString")),
         due_date=to_date(f.text(terms, "ram:DueDateDateTime/udt:DateTimeString")),
+        delivery_date=to_date(f.text(
+            tx, "ram:ApplicableHeaderTradeDelivery/ram:ActualDeliverySupplyChainEvent/ram:OccurrenceDateTime/"
+                "udt:DateTimeString")),
+        note=f.text(doc, "ram:IncludedNote/ram:Content"),
         currency=currency,
         buyer_reference=f.text(agreement, "ram:BuyerReference"),
         seller=_party(f.node(agreement, "ram:SellerTradeParty")),

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Eingang – {{ app_name }}{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Rechnungseingang</h1></div>
+<p class="lead">Rechnungen hochladen{% if mailbox %} oder an <strong>{{ mailbox }}</strong> schicken{% endif %}. Der Agent liest, prüft und gibt sichere Rechnungen selbst frei. Alles andere landet hier unter „Offen“ – mit Begründung.</p>
+
+<div class="stats">
+  {% for key, label in [("offen", "Offen"), ("freigegeben", "Freigegeben"), ("exportiert", "Exportiert"), ("abgelehnt", "Abgelehnt")] %}
+  <a class="stat {{ 'on' if f == key }}" href="/eingang?f={{ key }}"><b>{{ stats[key] }}</b><span>{{ label }}</span></a>
+  {% endfor %}
+</div>
+
+<form class="drop" method="post" action="/eingang/upload" enctype="multipart/form-data">
+  <p style="margin:0 0 10px"><strong>PDF, XRechnung (XML), ZUGFeRD oder Scan (JPG/PNG)</strong> – auch mehrere auf einmal</p>
+  <div class="row" style="justify-content:center">
+    <input type="file" name="files" multiple required accept=".pdf,.xml,.png,.jpg,.jpeg,.tif,.tiff">
+    <button>Hochladen</button>
+  </div>
+</form>
+
+<div class="card" style="margin-top:16px">
+  {% include "_inbox_rows.html" %}
+</div>
+{% endblock %}

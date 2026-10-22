@@ -19,6 +19,8 @@ class SourceFormat(StrEnum):
     ZUGFERD_PDF = "zugferd_pdf"  # PDF/A-3 with embedded CII XML
     PDF = "pdf"            # plain PDF, needs extraction
     IMAGE = "image"        # scan / photo, needs OCR
+    EXTRACTED = "extracted"  # read from a PDF/scan by the extraction agent
+    CREATED = "created"    # written by our own generator
     UNKNOWN = "unknown"
 
 
@@ -35,6 +37,8 @@ class Party(BaseModel):
     tax_number: str | None = None    # BT-32 (Steuernummer)
     address: Address = Field(default_factory=Address)
     email: str | None = None
+    contact_name: str | None = None  # BT-41 / BT-56
+    phone: str | None = None         # BT-42 / BT-57
 
 
 class InvoiceLine(BaseModel):
@@ -53,6 +57,7 @@ class VatBreakdown(BaseModel):
     rate: Decimal | None = None      # BT-119
     taxable_amount: Decimal | None = None  # BT-116
     tax_amount: Decimal | None = None      # BT-117
+    exemption_reason: str | None = None    # BT-120 (e.g. Kleinunternehmer § 19 UStG)
 
 
 class Totals(BaseModel):
@@ -81,6 +86,8 @@ class Invoice(BaseModel):
     type_code: str | None = None      # BT-3 (380 invoice, 381 credit note)
     issue_date: date | None = None    # BT-2
     due_date: date | None = None      # BT-9
+    delivery_date: date | None = None  # BT-72 (Liefer-/Leistungsdatum)
+    note: str | None = None           # BT-22
     currency: str | None = None       # BT-5
     buyer_reference: str | None = None  # BT-10 (Leitweg-ID for public sector)
     seller: Party = Field(default_factory=Party)

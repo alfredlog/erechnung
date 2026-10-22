@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Export – {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Export für den Steuerberater</h1>
+<p class="lead">Ein ZIP mit DATEV-Buchungsstapel, Übersicht (Excel) und allen Originalbelegen. Exportierte Rechnungen werden markiert und nicht doppelt übergeben.</p>
+<div class="card row spread">
+  <div><strong>{{ ready }}</strong> freigegebene Rechnung{{ "en" if ready != 1 }} bereit zum Export</div>
+  <form method="post" action="/export"><button {% if not ready %}disabled style="opacity:.5"{% endif %}>Export erstellen</button></form>
+</div>
+<h2>Bisherige Exporte</h2>
+<div class="card">
+{% if history %}
+<table>
+  <thead><tr><th>Datum</th><th>Rechnungen</th><th>Datei</th></tr></thead>
+  {% for e in history %}<tr><td>{{ e.created_at.strftime("%d.%m.%Y %H:%M") }}</td><td>{{ e.invoice_count }}</td><td><a href="/export/{{ e.id }}">{{ e.filename }}</a></td></tr>{% endfor %}
+</table>
+{% else %}<p class="muted" style="margin:0">Noch keine Exporte.</p>{% endif %}
+</div>
+<p class="muted small" style="margin-top:16px">Konten und Steuerschlüssel (Standard: SKR03) unter Einstellungen anpassen. Vor dem ersten echten Export einmal einen Test-Import mit dem Steuerberater machen.</p>
+{% endblock %}

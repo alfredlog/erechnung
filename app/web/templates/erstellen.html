@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}E-Rechnung erstellen – ZUGFeRD & XRechnung{% endblock %}
+{% block content %}
+<h1>{{ "Rechnung schreiben" if logged_in else "E-Rechnung erstellen" }}</h1>
+<p class="lead">ZUGFeRD-PDF (lesbar + maschinenlesbar, für Geschäftskunden) oder XRechnung (XML, für Behörden). Summen und Umsatzsteuer werden automatisch berechnet.</p>
+
+<form id="inv" class="card" onsubmit="return false">
+  <div class="row spread">
+    <h2 style="margin:0">Rechnungssteller</h2>
+    {% if logged_in %}<a class="small" href="/einstellungen">aus den Einstellungen – ändern</a>{% endif %}
+  </div>
+  <div class="grid" style="margin-top:12px" {% if logged_in and seller.name %}hidden{% endif %} id="sellerbox">
+    <div class="span2"><label>Firma / Name *</label><input type="text" name="s_name" value="{{ seller.name or '' }}"></div>
+    <div class="span2"><label>Straße und Hausnummer *</label><input type="text" name="s_street" value="{{ seller.street or '' }}"></div>
+    <div><label>PLZ *</label><input type="text" name="s_postal_code" value="{{ seller.postal_code or '' }}"></div>
+    <div><label>Ort *</label><input type="text" name="s_city" value="{{ seller.city or '' }}"></div>
+    <div><label>USt-IdNr.</label><input type="text" name="s_vat_id" value="{{ seller.vat_id or '' }}" placeholder="DE123456789"></div>
+    <div><label>Steuernummer</label><input type="text" name="s_tax_number" value="{{ seller.tax_number or '' }}" placeholder="007/123/45678"></div>
+    <div><label>Ansprechpartner</label><input type="text" name="s_contact_name" value="{{ seller.contact_name or '' }}"></div>
+    <div><label>Telefon</label><input type="text" name="s_phone" value="{{ seller.phone or '' }}"></div>
+    <div class="span2"><label>E-Mail</label><input type="email" name="s_email" value="{{ seller.email or '' }}"></div>
+  </div>
+  {% if logged_in and seller.name %}<p class="muted" style="margin:10px 0 0">{{ seller.name }}, {{ seller.street }}, {{ seller.postal_code }} {{ seller.city }}</p>{% endif %}
+
+  <h2>Rechnungsempfänger</h2>
+  <div class="grid">
+    <div class="span2"><label>Firma / Name *</label><input type="text" name="b_name"></div>
+    <div class="span2"><label>Straße und Hausnummer *</label><input type="text" name="b_street"></div>
+    <div><label>PLZ *</label><input type="text" name="b_postal_code"></div>
+    <div><label>Ort *</label><input type="text" name="b_city"></div>
+    <div><label>E-Mail (für XRechnung Pflicht)</label><input type="email" name="b_email"></div>
+    <div><label>Leitweg-ID / Bestellnummer</label><input type="text" name="buyer_reference" placeholder="z. B. 04011000-12345-03"></div>
+  </div>
+
+  <h2>Rechnung</h2>
+  <div class="grid3">
+    <div><label>Rechnungsnummer *</label><input type="text" name="number" value="{{ number }}"></div>
+    <div><label>Rechnungsdatum</label><input type="date" name="issue_date"></div>
+    <div><label>Leistungsdatum</label><input type="date" name="delivery_date"></div>
+    <div><label>Zahlungsziel (Tage)</label><input type="number" name="due_days" value="14" min="0"></div>
+    <div><label>IBAN {{ "" }}</label><input type="text" name="iban" value="{{ iban or '' }}"></div>
+    <div><label>BIC</label><input type="text" name="bic" value="{{ bic or '' }}"></div>
+  </div>
+  <label style="margin-top:12px;display:flex;gap:8px;align-items:center;font-weight:500;color:var(--ink)">
+    <input type="checkbox" name="small_business" {% if small_business %}checked{% endif %}> Kleinunternehmer nach § 19 UStG (keine Umsatzsteuer)
+  </label>
+
+  <h2>Positionen</h2>
+  <div class="table-wrap">
+  <table id="lines">
+    <thead><tr><th style="width:42%">Bezeichnung</th><th class="num">Menge</th><th>Einheit</th><th class="num">Einzelpreis netto</th><th class="num">USt %</th><th class="num">Netto</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  </div>
+  <button type="button" class="ghost small" style="margin-top:10px" onclick="addLine()">+ Position</button>
+
+  <table style="max-width:340px;margin:16px 0 0 auto">
+    <tr><td>Netto</td><td class="num" id="t_net">0,00 €</td></tr>
+    <tr><td>Umsatzsteuer</td><td class="num" id="t_vat">0,00 €</td></tr>
+    <tr><td><strong>Gesamt</strong></td><td class="num"><strong id="t_gross">0,00 €</strong></td></tr>
+  </table>
+
+  <h2>Hinweis auf der Rechnung</h2>
+  <textarea name="note" rows="2" placeholder="z. B. Vielen Dank für Ihren Auftrag!"></textarea>
+
+  <div id="errors" class="flash error" hidden></div>
+  <div class="row" style="margin-top:18px">
+    <button type="button" onclick="send('pdf')">ZUGFeRD-PDF erstellen</button>
+    <button type="button" class="ghost" onclick="send('xml')">XRechnung (XML) für Behörden</button>
+    <span id="busy" class="muted" hidden>Wird erstellt …</span>
+  </div>
+  {% if not logged_in %}<p class="muted small" style="margin-top:14px">Kostenlos, ohne Konto. Die Daten werden nicht gespeichert. Mit Konto: Firmendaten speichern, fortlaufende Nummern, Archiv und DATEV-Export.</p>{% endif %}
+</form>
+
+<script>
+const UNITS = [["C62","Stk."],["HUR","Std."],["DAY","Tag"],["LS","pauschal"],["KGM","kg"],["MTR","m"],["MTK","m²"],["LTR","l"],["KMT","km"]];
+const ENDPOINT = {{ ("/rechnungen/neu" if logged_in else "/api/v1/generate") | tojson }};
+const f = document.getElementById("inv");
+const tbody = document.querySelector("#lines tbody");
+const eur = v => v.toLocaleString("de-DE", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " €";
+const num = s => parseFloat(String(s).replace(/\./g, "").replace(",", ".")) || 0;
+const cent = v => Math.round((v + Number.EPSILON) * 100) / 100;
+
+function addLine(d = {}) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td><input type="text" data-k="name" value="${d.name || ""}"></td>
+    <td><input type="text" data-k="quantity" value="${d.quantity || "1"}" style="text-align:right;width:80px"></td>
+    <td><select data-k="unit_code">${UNITS.map(u => `<option value="${u[0]}">${u[1]}</option>`).join("")}</select></td>
+    <td><input type="text" data-k="unit_price" value="${d.unit_price || ""}" placeholder="0,00" style="text-align:right;width:110px"></td>
+    <td><select data-k="vat_rate"><option>19</option><option>7</option><option>0</option></select></td>
+    <td class="num" data-net>0,00 €</td>
+    <td><button type="button" class="ghost small" aria-label="Position entfernen" onclick="this.closest('tr').remove();calc()">×</button></td>`;
+  tbody.appendChild(tr);
+  tr.querySelectorAll("input,select").forEach(el => el.addEventListener("input", calc));
+  calc();
+}
+
+function lines() {
+  return [...tbody.rows].map(tr => {
+    const v = k => tr.querySelector(`[data-k=${k}]`).value;
+    return {name: v("name"), quantity: num(v("quantity")), unit_code: v("unit_code"), unit_price: num(v("unit_price")), vat_rate: num(v("vat_rate"))};
+  });
+}
+
+function calc() {
+  const small = f.small_business.checked;
+  const groups = {}; let net = 0;
+  [...tbody.rows].forEach((tr, i) => {
+    const l = lines()[i]; const n = cent(l.quantity * l.unit_price);
+    tr.querySelector("[data-net]").textContent = eur(n);
+    net += n; const r = small ? 0 : l.vat_rate; groups[r] = (groups[r] || 0) + n;
+  });
+  const vat = Object.entries(groups).reduce((s, [r, b]) => s + cent(cent(b) * r / 100), 0);
+  document.getElementById("t_net").textContent = eur(cent(net));
+  document.getElementById("t_vat").textContent = eur(cent(vat));
+  document.getElementById("t_gross").textContent = eur(cent(net + vat));
+}
+f.small_business.addEventListener("change", calc);
+
+function party(p) {
+  const o = {};
+  ["name","street","postal_code","city","vat_id","tax_number","email","contact_name","phone"].forEach(k => {
+    const el = f.elements[p + "_" + k]; if (el) o[k] = el.value.trim();
+  });
+  return o;
+}
+
+async function send(format) {
+  const err = document.getElementById("errors"); err.hidden = true;
+  const body = {
+    profile: format === "xml" ? "xrechnung" : "en16931",
+    number: f.number.value.trim(), due_days: parseInt(f.due_days.value || "14", 10),
+    buyer_reference: f.buyer_reference.value.trim(), seller: party("s"), buyer: party("b"),
+    lines: lines().filter(l => l.name.trim()), iban: f.iban.value, bic: f.bic.value,
+    note: f.note.value, small_business: f.small_business.checked,
+  };
+  if (f.issue_date.value) body.issue_date = f.issue_date.value;
+  if (f.delivery_date.value) body.delivery_date = f.delivery_date.value;
+  if (!body.lines.length) { err.textContent = "Bitte mindestens eine Position angeben."; err.hidden = false; return; }
+  document.getElementById("busy").hidden = false;
+  try {
+    const r = await fetch(`${ENDPOINT}?format=${format}`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    if (!r.ok) {
+      let msg = "Die Rechnung konnte nicht erstellt werden.";
+      try { const j = await r.json(); msg = (j.error || msg) + (j.missing ? " " + j.missing.join(", ") : ""); if (Array.isArray(j.detail)) msg = "Bitte Eingaben prüfen: " + j.detail.map(d => d.loc.slice(1).join(" ")).join(", "); } catch (e) {}
+      err.textContent = msg; err.hidden = false; return;
+    }
+    const blob = await r.blob();
+    const name = (r.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/);
+    const a = Object.assign(document.createElement("a"), {href: URL.createObjectURL(blob), download: name ? name[1] : "Rechnung"});
+    document.body.appendChild(a); a.click(); a.remove();
+    {% if logged_in %}const id = r.headers.get("X-Invoice-Id"); if (id) setTimeout(() => location.href = "/rechnung/" + id + "?m=created", 400);{% endif %}
+  } finally { document.getElementById("busy").hidden = true; }
+}
+addLine();
+</script>
+{% endblock %}

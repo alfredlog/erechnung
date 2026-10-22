@@ -1,21 +1,32 @@
-# Production-like stack. On the VPS, Nginx (already running for PDF Libre)
-# proxies the dedicated domain to 127.0.0.1:8100.
-services:
-  api:
-    build: .
-    env_file: .env
-    environment:
-      KOSIT_URL: http://kosit:8080/
-    ports: ["127.0.0.1:8100:8000"]
-    depends_on: [kosit, db]
-    mem_limit: 512m
-    restart: unless-stopped
+# Production stack on the VPS. Nginx (already running for PDF Libre) forwards the
+# product domain to 127.0.0.1:8100.
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    KOSIT_URL: http://kosit:8080/
+    DATA_DIR: /data
+  volumes: [files:/data]          # original invoices (archive), survives container updates
+  depends_on:
+    db: {condition: service_healthy}
+    kosit: {condition: service_started}
+  restart: unless-stopped
 
-  kosit:
+services:
+  api:                            # website + API
+    <<: *app
+    ports: ["127.0.0.1:8100:8000"]
+    mem_limit: 512m
+
+  worker:                         # background: reads invoices (OCR/LLM), checks mailboxes
+    <<: *app
+    command: ["python", "-m", "app.worker"]
+    mem_limit: 768m
+
+  kosit:                          # official XRechnung validator (Java)
     build: docker/kosit
     mem_limit: 1g
     restart: unless-stopped
-    # not published: only reachable from inside the Docker network
 
   db:
     image: postgres:16-alpine
@@ -24,8 +35,14 @@ services:
       POSTGRES_USER: erechnung
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erechnung -d erechnung"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     mem_limit: 512m
     restart: unless-stopped
 
 volumes:
   pgdata:
+  files:

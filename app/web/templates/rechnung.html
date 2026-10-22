@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% macro eur(v) %}{% if v is not none %}{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") }} €{% else %}–{% endif %}{% endmacro %}
+{% macro conf(key) %}{% set c = (row.confidence or {}).get(key) %}{% if c is not none and row.direction == "in" %}<span class="badge {{ 'ok' if c >= 0.9 else ('warning' if c >= 0.5 else 'error') }}" title="Sicherheit der Erkennung">{{ "sicher" if c >= 0.9 else ("unsicher" if c > 0 else "fehlt") }}</span>{% endif %}{% endmacro %}
+{% block title %}Rechnung {{ row.number or row.id }} – {{ app_name }}{% endblock %}
+{% block content %}
+{% set st = STATUS[row.status] %}
+<p class="small"><a href="{{ '/eingang' if row.direction == 'in' else '/ausgang' }}">← zurück</a></p>
+<div class="row spread">
+  <h1>{{ "Eingangsrechnung" if row.direction == "in" else "Ausgangsrechnung" }} {{ row.number or "" }}</h1>
+  <span class="badge {{ st[0] }}" style="font-size:15px">{{ st[1] }}</span>
+</div>
+<p class="lead">{{ row.partner_name or "Absender unbekannt" }} · {{ eur(row.amount_due) }}{% if row.document %} · {{ row.document.filename }}{% endif %}
+  {% if (row.confidence or {}).get("_method") %}<span class="muted small"> · gelesen über: {{ row.confidence["_method"] }}</span>{% endif %}</p>
+
+{% if row.status == "processing" %}
+<div class="card" hx-get="/rechnung/{{ row.id }}" hx-trigger="every 2s" hx-select="main" hx-target="main" hx-swap="outerHTML">Der Agent prüft die Rechnung …</div>
+{% endif %}
+
+{% if row.review_reasons %}
+<div class="card" style="border-color:var(--warn);background:var(--warn-bg)">
+  <strong>Warum der Agent fragt:</strong>
+  <ul style="margin:8px 0 0">{% for r in row.review_reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<div class="grid" style="margin-top:16px;align-items:start">
+  <div class="card">
+    <h2 style="margin-top:0">Erkannte Daten</h2>
+    {% if inv %}
+    {% set editable = row.status == "needs_review" and not structured %}
+    {% if structured and row.direction == "in" %}<p class="muted small" style="margin-top:0">Strukturierte E-Rechnung: Daten genau so, wie der Absender sie geschickt hat. Bei Fehlern ablehnen und eine Korrektur anfordern.</p>{% endif %}
+    <form method="post" action="/rechnung/{{ row.id }}/korrigieren">
+    <table>
+      {% for key, label, value, kind in [
+          ("number", "Rechnungsnummer", inv.number, "text"),
+          ("issue_date", "Rechnungsdatum", inv.issue_date, "date"),
+          ("due_date", "Fällig am", inv.due_date, "date"),
+          ("seller_name", "Rechnungssteller", inv.seller.name, "text"),
+          ("seller_vat_id", "USt-IdNr.", inv.seller.vat_id, "text"),
+          ("net_total", "Netto", inv.totals.net_total, "money"),
+          ("vat_total", "Umsatzsteuer", inv.totals.vat_total, "money"),
+          ("gross_total", "Brutto", inv.totals.gross_total, "money"),
+          ("iban", "IBAN", inv.payment.iban, "text")] %}
+      <tr>
+        <td class="muted small" style="width:38%">{{ label }}</td>
+        <td>
+          {% if editable and row.direction == "in" %}
+            <input type="{{ 'date' if kind == 'date' else 'text' }}" name="{{ key }}"
+                   value="{{ (value.isoformat() if kind == 'date' and value else ('%.2f'|format(value) if kind == 'money' and value is not none else (value or ''))) }}">
+          {% else %}
+            {{ (value.strftime("%d.%m.%Y") if kind == "date" and value else (eur(value) if kind == "money" else (value or "–"))) }}
+          {% endif %}
+        </td>
+        <td style="width:80px">{{ conf("seller_name" if key == "seller_vat_id" else key) if key != "due_date" and key != "seller_vat_id" else "" }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% if editable and row.direction == "in" %}<button class="ghost small" style="margin-top:10px">Korrekturen speichern & neu prüfen</button>{% endif %}
+    </form>
+
+    {% if inv.lines %}
+    <h2>Positionen</h2>
+    <table class="small">
+      <thead><tr><th>Bezeichnung</th><th class="num">Menge</th><th class="num">USt</th><th class="num">Netto</th></tr></thead>
+      {% for l in inv.lines %}<tr><td>{{ l.name or "–" }}</td><td class="num">{{ l.quantity|string if l.quantity is not none else "" }}</td><td class="num">{{ l.vat_rate|string if l.vat_rate is not none else "" }} %</td><td class="num">{{ eur(l.net_amount) }}</td></tr>{% endfor %}
+    </table>
+    {% endif %}
+    {% else %}
+    <p class="muted">Noch keine Daten erkannt.</p>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="card">
+      <h2 style="margin-top:0">Aktionen</h2>
+      {% if row.status == "needs_review" %}
+      <div class="row">
+        <form method="post" action="/rechnung/{{ row.id }}/freigeben">
+          {% if iban_changed %}<label style="display:flex;gap:8px;font-weight:500;color:var(--ink);margin-bottom:8px"><input type="checkbox" name="iban_confirmed" required> Neue IBAN telefonisch beim Lieferanten bestätigt (bekannte Nummer, nicht die aus der Rechnung)</label>{% endif %}
+          <button>Freigeben</button></form>
+        <form method="post" action="/rechnung/{{ row.id }}/ablehnen" class="row">
+          <input type="text" name="reason" placeholder="Grund (optional)" style="width:180px">
+          <button class="danger">Ablehnen</button>
+        </form>
+      </div>
+      <p class="muted small">Freigeben bestätigt auch den Rechnungssteller und seine IBAN. Künftige Rechnungen von ihm können dann automatisch durchlaufen.</p>
+      {% elif row.status == "approved" and row.direction == "in" %}
+      <p class="muted">Freigegeben – kommt mit dem nächsten Export zum Steuerberater.</p>
+      <form method="post" action="/rechnung/{{ row.id }}/ablehnen"><button class="danger small">Doch ablehnen</button></form>
+      {% endif %}
+      <div class="row" style="margin-top:12px">
+        {% if row.document %}<a class="btn ghost small" href="/rechnung/{{ row.id }}/datei" target="_blank">Original öffnen</a>{% endif %}
+        {% if row.direction == "out" %}<a class="btn ghost small" href="/rechnung/{{ row.id }}/xml">XRechnung (XML)</a>{% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Prüfergebnis</h2>
+      {% if row.kosit_ok is not none %}<p><span class="badge {{ 'ok' if row.kosit_ok else 'error' }}">KoSIT</span> {{ "Konform zu den offiziellen Regeln" if row.kosit_ok else "Nicht konform" }}</p>{% endif %}
+      {% if row.findings %}
+      <ul class="findings">{% for f in row.findings %}<li><span class="badge {{ f.severity }}">{{ "Fehler" if f.severity == "error" else "Hinweis" }}</span> {{ f.message }}</li>{% endfor %}</ul>
+      {% else %}<p class="muted" style="margin:0">Beträge und Pflichtangaben stimmen.</p>{% endif %}
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Verlauf</h2>
+      <table class="small">
+        {% for h in history %}
+        <tr><td class="muted" style="white-space:nowrap">{{ h.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+          <td>{{ {"received": "Empfangen", "processed": "Vom Agenten geprüft", "approved": "Freigegeben", "rejected": "Abgelehnt",
+                  "corrected": "Korrigiert", "invoice_created": "Erstellt", "supplier_iban_confirmed": "IBAN bestätigt",
+                  "exported": "Exportiert"}.get(h.action, h.action) }}
+            {% if h.action == "approved" %}<span class="muted">({{ "automatisch" if h.detail.get("by") == "agent" else "manuell" }})</span>{% endif %}
+            {% if h.action == "corrected" %}<span class="muted">{{ h.detail.get("field") }}: {{ h.detail.get("old") or "–" }} → {{ h.detail.get("new") or "–" }}</span>{% endif %}
+            {% if h.action == "rejected" and h.detail.get("reason") %}<span class="muted">– {{ h.detail.get("reason") }}</span>{% endif %}
+          </td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% macro eur(v) %}{% if v is not none %}{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") }} €{% else %}–{% endif %}{% endmacro %}
+{% block title %}Ausgang – {{ app_name }}{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Ausgangsrechnungen</h1><a class="btn" href="/rechnungen/neu">Rechnung schreiben</a></div>
+<p class="lead">Alle Rechnungen, die du hier erstellt hast – als ZUGFeRD-PDF archiviert, XRechnung jederzeit abrufbar.</p>
+<div class="card">
+{% if rows %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Nr.</th><th>Kunde</th><th>Datum</th><th class="num">Betrag</th><th>Status</th></tr></thead>
+  {% for r in rows %}{% set st = STATUS[r.status] %}
+  <tr class="link" onclick="location.href='/rechnung/{{ r.id }}'"><td>{{ r.number }}</td><td>{{ r.partner_name }}</td>
+    <td>{{ r.issue_date.strftime("%d.%m.%Y") if r.issue_date else "–" }}</td><td class="num">{{ eur(r.amount_due) }}</td>
+    <td><span class="badge {{ st[0] }}">{{ st[1] }}</span></td></tr>
+  {% endfor %}
+</table></div>
+{% else %}<p class="muted" style="margin:0">Noch keine Rechnungen geschrieben.</p>{% endif %}
+</div>
+{% endblock %}

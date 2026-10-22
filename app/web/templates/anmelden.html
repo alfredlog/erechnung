@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Anmelden – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<div class="card" style="max-width:440px;margin:30px auto">
+  <h1>Anmelden</h1>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  <form method="post" action="/anmelden">
+    <label for="email">E-Mail</label><input id="email" type="email" name="email" value="{{ email or '' }}" required autocomplete="email">
+    <label for="password" style="margin-top:12px">Passwort</label><input id="password" type="password" name="password" required autocomplete="current-password">
+    <button style="margin-top:18px;width:100%">Anmelden</button>
+  </form>
+  {% if allow_registration %}<p class="muted small" style="margin-top:16px">Noch kein Konto? <a href="/registrieren">Kostenlos registrieren</a></p>{% endif %}
+</div>
+{% endblock %}

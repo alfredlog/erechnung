@@ -36,7 +36,9 @@ def _party(p) -> Party:
             postal_code=f.text(addr, "cbc:PostalZone"),
             country_code=f.text(addr, "cac:Country/cbc:IdentificationCode"),
         ),
-        email=f.text(p, "cac:Contact/cbc:ElectronicMail"),
+        email=f.text(p, "cac:Contact/cbc:ElectronicMail") or f.text(p, "cbc:EndpointID"),
+        contact_name=f.text(p, "cac:Contact/cbc:Name"),
+        phone=f.text(p, "cac:Contact/cbc:Telephone"),
     )
 
 
@@ -77,6 +79,7 @@ def parse_ubl(root: etree._Element) -> Invoice:
             rate=f.dec(st, "cac:TaxCategory/cbc:Percent"),
             taxable_amount=f.dec(st, "cbc:TaxableAmount"),
             tax_amount=f.dec(st, "cbc:TaxAmount"),
+            exemption_reason=f.text(st, "cac:TaxCategory/cbc:TaxExemptionReason"),
         )
         for st in f.all(tax_total, "cac:TaxSubtotal")
     ]
@@ -91,6 +94,8 @@ def parse_ubl(root: etree._Element) -> Invoice:
         issue_date=to_date(f.text(root, "cbc:IssueDate")),
         due_date=to_date(f.text(root, "cbc:DueDate") or f.text(root, "cac:PaymentMeans/cbc:PaymentDueDate")),
         currency=currency,
+        delivery_date=to_date(f.text(root, "cac:Delivery/cbc:ActualDeliveryDate")),
+        note=f.text(root, "cbc:Note"),
         buyer_reference=f.text(root, "cbc:BuyerReference"),
         seller=_party(f.node(root, "cac:AccountingSupplierParty/cac:Party")),
         buyer=_party(f.node(root, "cac:AccountingCustomerParty/cac:Party")),

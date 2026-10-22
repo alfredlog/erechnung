@@ -4,30 +4,92 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}E-Rechnungen (XRechnung, ZUGFeRD) empfangen, prüfen, erstellen und an DATEV übergeben. Server in Deutschland.{% endblock %}">
   <script src="/static/htmx.min.js" defer></script>
   <style>
-    :root { --ink:#1d2433; --muted:#5b6475; --line:#d9dde5; --bg:#f6f7f9; --card:#fff;
-            --ok:#1f7a4d; --ok-bg:#e6f4ec; --warn:#8a5a00; --warn-bg:#fdf3dc; --err:#a12b2b; --err-bg:#fbe9e9;
-            --accent:#1f4fd1; }
+    :root { --ink:#16202e; --muted:#5b6475; --line:#dde1e8; --bg:#f5f6f8; --card:#fff; --soft:#eef1f6;
+            --ok:#1f7a4d; --ok-bg:#e4f3ea; --warn:#8a5a00; --warn-bg:#fcf1d8; --err:#a12b2b; --err-bg:#fbe8e8;
+            --info:#1d4e9e; --info-bg:#e6eefb; --accent:#1846c4; --accent-ink:#fff; }
     * { box-sizing: border-box; }
     body { margin:0; font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:var(--bg); }
-    main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
-    h1 { font-size: 28px; margin: 0 0 4px; } h2 { font-size: 18px; margin: 28px 0 8px; }
-    .lead { color: var(--muted); margin: 0 0 24px; }
+    a { color: var(--accent); }
+    header.top { background:var(--card); border-bottom:1px solid var(--line); }
+    header.top .wrap { max-width:1100px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+    .brand { font-weight:800; letter-spacing:-.02em; color:var(--ink); text-decoration:none; font-size:18px; }
+    .brand span { color:var(--accent); }
+    nav.main { display:flex; gap:4px; flex-wrap:wrap; flex:1; }
+    nav.main a { color:var(--muted); text-decoration:none; padding:6px 10px; border-radius:8px; font-weight:600; font-size:15px; }
+    nav.main a.on, nav.main a:hover { background:var(--soft); color:var(--ink); }
+    .who { color:var(--muted); font-size:14px; }
+    main { max-width:1100px; margin:0 auto; padding:28px 16px 64px; }
+    main.narrow { max-width:860px; }
+    h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.01em; } h2 { font-size:18px; margin:28px 0 10px; }
+    .lead { color:var(--muted); margin:0 0 22px; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; }
-    .drop { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-    button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 18px; font:inherit; cursor:pointer; }
-    .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:14px; font-weight:600; }
+    .card + .card { margin-top:16px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .spread { justify-content:space-between; }
+    button, .btn { background:var(--accent); color:var(--accent-ink); border:0; border-radius:8px; padding:10px 18px;
+                   font:inherit; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; }
+    .btn.ghost, button.ghost { background:var(--soft); color:var(--ink); }
+    .btn.danger, button.danger { background:var(--err-bg); color:var(--err); }
+    .btn.small, button.small { padding:6px 12px; font-size:14px; }
+    label { display:block; font-size:14px; font-weight:600; color:var(--muted); margin-bottom:4px; }
+    input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], select, textarea {
+      width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px; font:inherit; background:#fff; color:var(--ink); }
+    input:focus, select:focus, textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; }
+    .grid3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px 16px; }
+    .span2 { grid-column: span 2; }
+    @media (max-width: 720px) { .grid, .grid3 { grid-template-columns:1fr; } .span2 { grid-column:auto; } }
+    .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:13px; font-weight:700; white-space:nowrap; }
     .ok { background:var(--ok-bg); color:var(--ok); } .warning { background:var(--warn-bg); color:var(--warn); }
-    .error { background:var(--err-bg); color:var(--err); }
+    .error { background:var(--err-bg); color:var(--err); } .info { background:var(--info-bg); color:var(--info); }
+    .muted { color:var(--muted); } .small { font-size:14px; }
     table { width:100%; border-collapse:collapse; font-size:15px; }
-    th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
-    td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
-    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
-    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
-    ul.findings { padding-left: 0; list-style: none; } ul.findings li { margin: 6px 0; }
-    .htmx-indicator { display:none; } .htmx-request .htmx-indicator { display:inline; }
+    th, td { text-align:left; padding:8px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { font-size:13px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+    td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; white-space:nowrap; }
+    tr.link { cursor:pointer; } tr.link:hover td { background:var(--soft); }
+    .table-wrap { overflow-x:auto; }
+    ul.findings { padding-left:0; list-style:none; margin:0; } ul.findings li { margin:6px 0; }
+    .flash { padding:12px 16px; border-radius:10px; margin-bottom:16px; font-weight:600; }
+    .stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:18px; }
+    .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; text-decoration:none; color:var(--ink); }
+    .stat b { display:block; font-size:26px; } .stat span { color:var(--muted); font-size:14px; }
+    .stat.on { outline:2px solid var(--accent); }
+    @media (max-width: 720px) { .stats { grid-template-columns:repeat(2, 1fr); } }
+    .drop { border:2px dashed var(--line); border-radius:12px; padding:22px; text-align:center; background:var(--card); }
+    .htmx-indicator { display:none; } .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display:inline; }
+    footer.site { max-width:1100px; margin:0 auto; padding:24px 16px 40px; color:var(--muted); font-size:14px; }
   </style>
 </head>
-<body><main>{% block content %}{% endblock %}</main></body>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="{{ '/eingang' if user else '/' }}">E-<span>Rechnung</span></a>
+  <nav class="main">
+    {% if user %}
+      <a href="/eingang" class="{{ 'on' if nav == 'eingang' }}">Eingang</a>
+      <a href="/rechnungen/neu" class="{{ 'on' if nav == 'neu' }}">Rechnung schreiben</a>
+      <a href="/ausgang" class="{{ 'on' if nav == 'ausgang' }}">Ausgang</a>
+      <a href="/export" class="{{ 'on' if nav == 'export' }}">Export</a>
+      <a href="/einstellungen" class="{{ 'on' if nav == 'einstellungen' }}">Einstellungen</a>
+    {% else %}
+      <a href="/" class="{{ 'on' if nav == 'pruefen' }}">Prüfen</a>
+      <a href="/erstellen" class="{{ 'on' if nav == 'erstellen' }}">Erstellen</a>
+    {% endif %}
+  </nav>
+  {% if user %}
+    <span class="who">{{ user.organization.name }}</span>
+    <form method="post" action="/abmelden" style="margin:0"><button class="ghost small">Abmelden</button></form>
+  {% else %}
+    <a class="btn ghost small" href="/anmelden">Anmelden</a>
+  {% endif %}
+</div></header>
+<main class="{% block main_class %}{% endblock %}">
+  {% if flash %}<div class="flash {{ flash[0] }}">{{ flash[1] }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="site">Daten werden auf Servern in Deutschland verarbeitet. Kein Ersatz für steuerliche Beratung.</footer>
+</body>
 </html>

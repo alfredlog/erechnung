@@ -6,7 +6,7 @@ ARG CONFIG_ZIP=xrechnung-3.0.2-validator-configuration-2026-08-31.zip
 WORKDIR /opt/kosit
 RUN apt-get update && apt-get install -y --no-install-recommends curl unzip && rm -rf /var/lib/apt/lists/* \
  && curl -fsSL -o validator.jar \
-      "https://repo1.maven.org/maven2/org/kosit/validator/${VALIDATOR_VERSION}/validator-${VALIDATOR_VERSION}-standalone.jar" \
+      "https://github.com/itplr-kosit/validator/releases/download/v${VALIDATOR_VERSION}/validator-${VALIDATOR_VERSION}-standalone.jar" \
  && curl -fsSL -o config.zip \
       "https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/${CONFIG_RELEASE}/${CONFIG_ZIP}" \
  && unzip -q config.zip -d config && rm config.zip

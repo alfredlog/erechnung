@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<h1>Einstellungen</h1>
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+<form method="post" action="/einstellungen">
+  <div class="card">
+    <h2 style="margin-top:0">Firmendaten (erscheinen auf deinen Rechnungen)</h2>
+    <div class="grid">
+      <div class="span2"><label>Firma *</label><input type="text" name="p_name" value="{{ profile.name }}"></div>
+      <div class="span2"><label>Straße und Hausnummer *</label><input type="text" name="p_street" value="{{ profile.street }}"></div>
+      <div><label>PLZ *</label><input type="text" name="p_postal_code" value="{{ profile.postal_code }}"></div>
+      <div><label>Ort *</label><input type="text" name="p_city" value="{{ profile.city }}"></div>
+      <div><label>Land</label><input type="text" name="p_country_code" value="{{ profile.country_code or 'DE' }}" maxlength="2"></div>
+      <div><label>USt-IdNr.</label><input type="text" name="p_vat_id" value="{{ profile.vat_id }}"></div>
+      <div><label>Steuernummer</label><input type="text" name="p_tax_number" value="{{ profile.tax_number }}"></div>
+      <div><label>Ansprechpartner</label><input type="text" name="p_contact_name" value="{{ profile.contact_name }}"></div>
+      <div><label>Telefon</label><input type="text" name="p_phone" value="{{ profile.phone }}"></div>
+      <div><label>E-Mail</label><input type="email" name="p_email" value="{{ profile.email }}"></div>
+      <div><label>IBAN</label><input type="text" name="iban" value="{{ org.iban }}"></div>
+      <div><label>BIC</label><input type="text" name="bic" value="{{ org.bic }}"></div>
+      <div><label>Präfix Rechnungsnummer</label><input type="text" name="invoice_prefix" value="{{ org.invoice_prefix }}"></div>
+      <div><label>Nächste laufende Nummer</label><input type="number" name="next_invoice_number" value="{{ org.next_invoice_number }}" min="1"></div>
+    </div>
+    <label style="margin-top:12px;display:flex;gap:8px;align-items:center;font-weight:500;color:var(--ink)"><input type="checkbox" name="small_business" {% if org.small_business %}checked{% endif %}> Kleinunternehmer nach § 19 UStG</label>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Agent</h2>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink)"><input type="checkbox" name="auto_approve" {% if org.auto_approve %}checked{% endif %} style="margin-top:5px">
+      <span>Sichere Rechnungen automatisch freigeben<br><span class="muted small">Nur wenn alle Werte sicher erkannt sind, die Rechnung fehlerfrei ist, der Lieferant schon einmal bestätigt wurde und die IBAN gleich geblieben ist. Sonst fragt der Agent immer.</span></span></label>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Rechnungs-Postfach (IMAP)</h2>
+    <p class="muted small">Ein E-Mail-Postfach, an das Lieferanten ihre Rechnungen schicken (z. B. rechnungen@deinefirma.de). Der Agent holt die Anhänge alle paar Minuten ab.</p>
+    <div class="grid">
+      <div><label>Server</label><input type="text" name="imap_host" value="{{ imap.host or '' }}" placeholder="imap.ionos.de"></div>
+      <div><label>Port</label><input type="text" name="imap_port" value="{{ imap.port or '993' }}"></div>
+      <div><label>Benutzer</label><input type="text" name="imap_user" value="{{ imap.user or '' }}"></div>
+      <div><label>Passwort {% if has_imap_password %}<span class="muted">(gespeichert, leer lassen = behalten)</span>{% endif %}</label><input type="password" name="imap_password" autocomplete="new-password"></div>
+      <div><label>Ordner</label><input type="text" name="imap_folder" value="{{ imap.folder or 'INBOX' }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">DATEV-Export</h2>
+    <p class="muted small">Die Nummern bekommst du von deinem Steuerberater. Standardkonten nach SKR03 – bitte mit dem Steuerberater abstimmen.</p>
+    <div class="grid">
+      <div><label>Beraternummer</label><input type="text" name="d_consultant_number" value="{{ datev.consultant_number }}"></div>
+      <div><label>Mandantennummer</label><input type="text" name="d_client_number" value="{{ datev.client_number }}"></div>
+      <div><label>Kontenrahmen</label><select name="d_chart"><option value="03" {% if datev.chart == "03" %}selected{% endif %}>SKR03</option><option value="04" {% if datev.chart == "04" %}selected{% endif %}>SKR04</option></select></div>
+      <div><label>Aufwandskonto Eingangsrechnungen</label><input type="text" name="d_expense_account" value="{{ datev.expense_account }}"></div>
+      <div><label>Beginn Wirtschaftsjahr (Monat)</label><input type="text" name="d_fiscal_year_start_month" value="{{ datev.fiscal_year_start_month }}"></div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:16px"><button>Speichern</button></div>
+</form>
+{% if imap.host %}
+<form method="post" action="/einstellungen/postfach-testen" style="margin-top:10px"><button class="ghost small">Postfach-Verbindung testen</button></form>
+{% endif %}
+{% endblock %}

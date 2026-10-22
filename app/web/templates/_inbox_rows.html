@@ -1,0 +1,25 @@
+{% macro eur(v) %}{% if v is not none %}{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") }} €{% else %}–{% endif %}{% endmacro %}
+<div id="rows" {% if processing %}hx-get="/eingang?f={{ f }}" hx-trigger="every 3s" hx-swap="outerHTML" hx-select="#rows"{% endif %}>
+{% if rows %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Status</th><th>Absender</th><th>Rechnungsnr.</th><th>Datum</th><th class="num">Betrag</th><th>Hinweis</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  {% set st = STATUS[r.status] %}
+  <tr class="link" onclick="location.href='/rechnung/{{ r.id }}'">
+    <td><span class="badge {{ st[0] }}">{{ st[1] }}</span></td>
+    <td>{{ r.partner_name or (r.document.filename if r.document else "–") }}</td>
+    <td>{{ r.number or "–" }}</td>
+    <td>{{ r.issue_date.strftime("%d.%m.%Y") if r.issue_date else "–" }}</td>
+    <td class="num">{{ eur(r.amount_due) }}</td>
+    <td class="small muted">{{ (r.review_reasons or [""])[0][:90] }}{% if (r.review_reasons or [])|length > 1 %} (+{{ r.review_reasons|length - 1 }}){% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted" style="margin:0">Hier ist nichts. {% if f == "offen" %}Alle Rechnungen sind erledigt.{% endif %}</p>
+{% endif %}
+</div>
