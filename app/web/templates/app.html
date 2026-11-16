@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}App installieren – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<h1>{{ app_name }} als App</h1>
+<p class="lead">Ohne App Store: Du installierst {{ app_name }} direkt aus dem Browser. Danach hast du ein Symbol auf dem Startbildschirm, die App öffnet sich ohne Adressleiste – und mit „Rechnung fotografieren“ erfasst du Papierrechnungen mit der Kamera.</p>
+
+<div class="card" id="install-now" hidden>
+  <p style="margin-top:0">Dein Browser kann die App direkt installieren:</p>
+  <button id="install-btn">App installieren</button>
+</div>
+<div class="card" id="installed" hidden><p style="margin:0">✓ Du nutzt {{ app_name }} bereits als App.</p></div>
+
+<div class="card">
+  <h2 style="margin-top:0">iPhone und iPad (Safari)</h2>
+  <ol>
+    <li>{{ app_name }} in <b>Safari</b> öffnen (nicht in einer anderen App).</li>
+    <li>Unten auf <b>Teilen</b> tippen (Quadrat mit Pfeil nach oben).</li>
+    <li><b>„Zum Home-Bildschirm“</b> wählen und <b>„Hinzufügen“</b> tippen.</li>
+  </ol>
+</div>
+<div class="card">
+  <h2 style="margin-top:0">Android (Chrome)</h2>
+  <ol>
+    <li>{{ app_name }} in <b>Chrome</b> öffnen.</li>
+    <li>Auf die Meldung <b>„App installieren“</b> tippen – oder oben rechts auf <b>⋮</b> und <b>„App installieren“</b>.</li>
+  </ol>
+  <p class="muted small" style="margin-bottom:0">Extra auf Android: {{ app_name }} erscheint beim <b>Teilen</b>. Eine PDF-Rechnung aus WhatsApp, Mail oder Dateien teilen – sie landet direkt in deinem Eingang.</p>
+</div>
+<div class="card">
+  <h2 style="margin-top:0">Am Computer (Chrome, Edge)</h2>
+  <p style="margin:0">In der Adressleiste rechts auf das Symbol <b>„Installieren“</b> klicken.</p>
+</div>
+<script>
+const box = document.getElementById("install-now");
+if (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) {
+  document.getElementById("installed").hidden = false;
+}
+function showInstall() { if (window.__installPrompt) box.hidden = false; }
+window.addEventListener("installprompt-ready", showInstall); showInstall();
+document.getElementById("install-btn").addEventListener("click", async () => {
+  const p = window.__installPrompt; if (!p) return;
+  p.prompt(); await p.userChoice; window.__installPrompt = null; box.hidden = true;
+});
+</script>
+{% endblock %}

@@ -46,7 +46,7 @@ def register(db: Session, company: str, email: str, password: str, terms_version
 
 def authenticate(db: Session, email: str, password: str) -> User | None:
     user = db.scalar(select(User).where(func.lower(User.email) == email.strip().lower()))
-    if user and verify_password(password, user.password_hash):
+    if user and user.role != "removed" and verify_password(password, user.password_hash):
         return user
     return None
 

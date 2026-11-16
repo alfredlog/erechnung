@@ -3,6 +3,7 @@
 {% block main_class %}narrow{% endblock %}
 {% block content %}
 <h1>Einstellungen</h1>
+{% if is_owner %}{% include '_settings_nav.html' %}{% endif %}
 {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
 <form method="post" action="/einstellungen">
   <div class="card">

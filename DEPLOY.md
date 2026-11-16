@@ -87,7 +87,16 @@ Run the command again after changing prices: new prices are created and take ove
 existing subscribers keep their price until they change plan. `--reset-webhook` recreates the
 webhook (new secret). Test cards: 4242 4242 4242 4242, any future date, any CVC.
 
-## 7. Backups (daily)
+## 7. Team, notifications, app
+
+- Team: Admins invite colleagues (role Mitarbeiter) or the tax advisor (read + export) under
+  Einstellungen → Team. Invitation mails need the SMTP settings; without them the page shows the link.
+- Notifications: the worker sends the daily "invoices waiting" mail at 8:00 German time and trial
+  reminders. Users switch it off under "Mein Konto".
+- App: the site is installable (manifest, service worker at /sw.js). Needs HTTPS. On Android it also
+  appears in the share menu. Help page for customers: /app.
+
+## 8. Backups (daily)
 
 ```bash
 mkdir -p ~/backups/erechnung
@@ -98,13 +107,13 @@ crontab -e
 
 Copy the backups regularly to a second place (e.g. netcup storage or your laptop).
 
-## 8. Update
+## 9. Update
 
 ```bash
 cd ~/apps/erechnung && git pull && docker compose up -d --build
 ```
 
-## 9. PDF Libre tools
+## 10. PDF Libre tools
 
 PDF Libre's `.env`: `ERECHNUNG_API_URL=http://127.0.0.1:8100`. The tools "XRechnung anzeigen"
 and "E-Rechnung prüfen" call `POST /api/v1/render`.

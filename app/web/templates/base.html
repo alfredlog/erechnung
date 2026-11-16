@@ -9,6 +9,11 @@
   <link rel="icon" href="/static/favicon.ico" sizes="48x48">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <meta name="theme-color" content="#16202E">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="E-Rechnung">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <script src="/static/htmx.min.js" defer></script>
   <style>
     :root { --ink:#16202e; --muted:#5b6475; --line:#dde1e8; --bg:#f5f6f8; --card:#fff; --soft:#eef1f6;
@@ -26,6 +31,20 @@
     nav.main a { color:var(--muted); text-decoration:none; padding:6px 10px; border-radius:8px; font-weight:600; font-size:15px; }
     nav.main a.on, nav.main a:hover { background:var(--soft); color:var(--ink); }
     .who { color:var(--muted); font-size:14px; }
+    @media (max-width: 760px) {
+      header.top .wrap { gap:8px 12px; padding:8px 14px 0; }
+      header.top .brand { flex:1; }
+      header.top form.logout { display:none; }
+      header.top .brand .word { font-size:17px; }
+      .who { max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      nav.main { order:3; flex:1 0 100%; flex-wrap:nowrap; overflow-x:auto; margin:0 -14px; padding:4px 10px 8px;
+                 scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+      nav.main::-webkit-scrollbar { display:none; }
+      nav.main a { white-space:nowrap; flex:0 0 auto; }
+      main { padding-top:18px; }
+      h1 { font-size:26px; }
+      form.drop input[type=file] { max-width:100%; }
+    }
     main { max-width:1100px; margin:0 auto; padding:28px 16px 64px; }
     main.narrow { max-width:860px; }
     h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.01em; } h2 { font-size:18px; margin:28px 0 10px; }
@@ -67,6 +86,13 @@
     .drop { border:2px dashed var(--line); border-radius:12px; padding:22px; text-align:center; background:var(--card); }
     .htmx-indicator { display:none; } .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display:inline; }
     footer.site .legal-links { margin-top:6px; } footer.site .legal-links a { color:var(--muted); }
+    form.camera { display:none; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+    form.camera label.btn { cursor:pointer; }
+    @media (max-width: 760px), (display-mode: standalone) { form.camera { display:flex; } }
+    .subnav { display:flex; gap:6px; flex-wrap:wrap; margin:-6px 0 22px; }
+    .subnav a { padding:7px 12px; border-radius:8px; color:var(--muted); text-decoration:none; font-weight:600; font-size:15px; background:#fff; border:1px solid var(--line); }
+    .subnav a.on { color:var(--ink); border-color:var(--accent); }
+    a.who { color:var(--muted); text-decoration:none; } a.who:hover { color:var(--ink); }
     footer.site { max-width:1100px; margin:0 auto; padding:24px 16px 40px; color:var(--muted); font-size:14px; }
   </style>
   {% block head %}{% endblock %}
@@ -77,19 +103,18 @@
   <nav class="main">
     {% if user %}
       <a href="/eingang" class="{{ 'on' if nav == 'eingang' }}">Eingang</a>
-      <a href="/rechnungen/neu" class="{{ 'on' if nav == 'neu' }}">Rechnung schreiben</a>
+      {% if can_write %}<a href="/rechnungen/neu" class="{{ 'on' if nav == 'neu' }}">Rechnung schreiben</a>{% endif %}
       <a href="/ausgang" class="{{ 'on' if nav == 'ausgang' }}">Ausgang</a>
       <a href="/export" class="{{ 'on' if nav == 'export' }}">Export</a>
-      <a href="/einstellungen" class="{{ 'on' if nav == 'einstellungen' }}">Einstellungen</a>
-      <a href="/tarif" class="{{ 'on' if nav == 'tarif' }}">Tarif</a>
+      {% if is_owner %}<a href="/einstellungen" class="{{ 'on' if nav in ('einstellungen', 'team', 'tarif') }}">Einstellungen</a>{% endif %}
     {% else %}
       <a href="/pruefen" class="{{ 'on' if nav == 'pruefen' }}">Prüfen</a>
       <a href="/erstellen" class="{{ 'on' if nav == 'erstellen' }}">Erstellen</a>
     {% endif %}
   </nav>
   {% if user %}
-    <span class="who">{{ user.organization.name }}</span>
-    <form method="post" action="/abmelden" style="margin:0"><button class="ghost small">Abmelden</button></form>
+    <a class="who" href="/konto" title="Mein Konto">{{ user.organization.name }}{% if role == "advisor" %} · Steuerberater{% endif %}</a>
+    <form method="post" action="/abmelden" class="logout" style="margin:0"><button class="ghost small">Abmelden</button></form>
   {% else %}
     <a class="btn ghost small" href="/anmelden">Anmelden</a>
   {% endif %}
@@ -100,7 +125,13 @@
 </main>
 <footer class="site">
   <div>Daten werden auf Servern in Deutschland verarbeitet. Kein Ersatz für steuerliche Beratung.</div>
-  <nav class="legal-links"><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/agb">AGB</a> · <a href="/avv">AV-Vertrag</a></nav>
+  <nav class="legal-links"><a href="/app">App installieren</a> · <a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/agb">AGB</a> · <a href="/avv">AV-Vertrag</a></nav>
 </footer>
+<script>
+  if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js").catch(() => {}); }
+  window.addEventListener("beforeinstallprompt", (e) => {  // Android/desktop Chrome: install on our button
+    e.preventDefault(); window.__installPrompt = e; window.dispatchEvent(new Event("installprompt-ready"));
+  });
+</script>
 </body>
 </html>

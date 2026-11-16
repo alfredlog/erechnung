@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Einladung – {{ app_name }}{% endblock %}
+{% block head %}<meta name="referrer" content="no-referrer">{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<div class="card" style="max-width:460px;margin:30px auto">
+  <h1>Einladung</h1>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  {% if inv %}
+  <p>Du wurdest eingeladen, bei <b>{{ org.name }}</b> mitzuarbeiten – als {{ ROLE_TEXT[inv.role] }}.</p>
+  <form method="post" action="/einladung">
+    <input type="hidden" name="token" value="{{ token }}">
+    <label>E-Mail</label><input type="email" value="{{ inv.email }}" disabled>
+    <label style="margin-top:12px">Passwort (mind. 10 Zeichen)</label><input type="password" name="password" minlength="10" required autocomplete="new-password">
+    <label style="margin-top:12px">Passwort wiederholen</label><input type="password" name="password2" minlength="10" required autocomplete="new-password">
+    <label style="display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);margin-top:14px">
+      <input type="checkbox" name="accept_terms" required style="margin-top:4px">
+      <span class="small">Ich habe die <a href="/datenschutz" target="_blank">Datenschutzerklärung</a> gelesen.</span>
+    </label>
+    <button style="margin-top:18px;width:100%">Zugang anlegen</button>
+  </form>
+  {% else %}
+  <p class="muted">Diese Einladung ist ungültig oder abgelaufen. Bitte die Person, die dich eingeladen hat, um eine neue Einladung.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -16,6 +16,12 @@
 </div>
 {% if stats.keine %}<p class="small" style="margin:-8px 0 14px"><a href="/eingang?f=keine">{{ stats.keine }} Dokument(e) unter „Keine Rechnung“</a> <span class="muted">– zählen nicht für das Limit</span></p>{% endif %}
 
+{% if can_write %}
+<form class="camera" method="post" action="/eingang/upload" enctype="multipart/form-data">
+  <label class="btn" for="photo">📷 Rechnung fotografieren</label>
+  <input id="photo" type="file" name="files" accept="image/*" capture="environment" hidden onchange="this.form.submit()">
+  <span class="muted small">Papierrechnung flach hinlegen, ganze Seite ins Bild, gutes Licht.</span>
+</form>
 <form class="drop" method="post" action="/eingang/upload" enctype="multipart/form-data">
   <p style="margin:0 0 10px"><strong>PDF, XRechnung (XML), ZUGFeRD oder Scan (JPG/PNG)</strong> – auch mehrere auf einmal</p>
   <div class="row" style="justify-content:center">
@@ -23,6 +29,8 @@
     <button>Hochladen</button>
   </div>
 </form>
+
+{% endif %}
 
 <div class="card" style="margin-top:16px">
   {% include "_inbox_rows.html" %}

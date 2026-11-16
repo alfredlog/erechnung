@@ -38,6 +38,25 @@ def _ocr_langs() -> str:
     return "+".join(x for x in ("deu", "eng") if x in langs) or "eng"
 
 
+def prepare_photo(data: bytes, longest: int = 3000) -> bytes:
+    """Phone photos: turn upright (EXIF), grayscale, sensible size, more contrast."""
+    from io import BytesIO
+
+    from PIL import Image, ImageOps
+    try:
+        im = Image.open(BytesIO(data))
+        im = ImageOps.exif_transpose(im)
+    except Exception:  # noqa: BLE001  not an image Pillow knows: let Tesseract try the original
+        return data
+    im = ImageOps.autocontrast(im.convert("L"), cutoff=1)
+    scale = longest / max(im.size)
+    if scale < 1 or max(im.size) < 1500:
+        im = im.resize((round(im.width * scale), round(im.height * scale)), Image.LANCZOS)
+    out = BytesIO()
+    im.save(out, format="PNG")
+    return out.getvalue()
+
+
 def ocr(data: bytes, is_pdf: bool, max_pages: int = 5) -> str:
     """OCR with Tesseract. PDFs are rasterised with pdftoppm (300 dpi) first."""
     if not shutil.which("tesseract"):
@@ -53,8 +72,8 @@ def ocr(data: bytes, is_pdf: bool, max_pages: int = 5) -> str:
                             str(tmpdir / "page")], check=True, timeout=180, capture_output=True)
             images = sorted(tmpdir.glob("page*.png"))
         else:
-            img = tmpdir / "in.img"
-            img.write_bytes(data)
+            img = tmpdir / "in.png"
+            img.write_bytes(prepare_photo(data))
             images = [img]
         parts = []
         for image in images:

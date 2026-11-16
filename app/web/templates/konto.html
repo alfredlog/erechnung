@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Mein Konto – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<h1>Mein Konto</h1>
+{% if is_owner %}{% include '_settings_nav.html' %}{% endif %}
+<div class="card">
+  <p style="margin-top:0"><b>{{ user.email }}</b><br><span class="muted">{{ ROLES[role] }} bei {{ user.organization.name }}</span></p>
+  <p class="small"><a href="/passwort-vergessen">Passwort ändern</a> (per E-Mail-Link)</p>
+  <form method="post" action="/abmelden" style="margin:0"><button class="ghost small">Abmelden</button></form>
+</div>
+{% if role in ("owner", "member") %}
+<div class="card">
+  <h2 style="margin-top:0">Benachrichtigungen</h2>
+  {% if sending %}
+  <form method="post" action="/benachrichtigungen">
+    <label style="display:flex;gap:8px;font-weight:500;color:var(--ink)"><input type="checkbox" name="daily_digest" {{ 'checked' if digest }}>
+      Morgens um 8 Uhr eine E-Mail, wenn Rechnungen auf meine Prüfung warten (nur dann)</label>
+    <button class="small" style="margin-top:12px">Speichern</button>
+  </form>
+  {% else %}<p class="muted small" style="margin:0">Auf diesem Server ist der E-Mail-Versand nicht eingerichtet.</p>{% endif %}
+</div>
+{% endif %}
+<div class="card">
+  <h2 style="margin-top:0">App auf dem Handy</h2>
+  <p class="muted small" style="margin:0"><a href="/app">So installierst du {{ app_name }} auf deinem Handy</a> – mit Kamera für Papierrechnungen.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Team – {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Team</h1>
+{% include '_settings_nav.html' %}
+<p class="lead">Lade Kolleginnen, Kollegen oder deinen Steuerberater ein. Jede Person bekommt einen eigenen Zugang – im Verlauf jeder Rechnung steht, wer was gemacht hat.</p>
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+{% if link %}<div class="card"><label>Einladungslink (E-Mail-Versand ist nicht eingerichtet)</label>
+  <div class="row"><input type="text" id="invlink" value="{{ link }}" readonly style="flex:1"><button type="button" class="small" onclick="navigator.clipboard.writeText(document.getElementById('invlink').value);this.textContent='Kopiert ✓'">Kopieren</button></div></div>{% endif %}
+
+<div class="card">
+  <div class="row spread"><h2 style="margin:0">Zugänge</h2>
+    <span class="muted small">{{ seats.used }} von {{ seats.limit }} Nutzern im Tarif {{ seats.plan.name }} · Steuerberater zählen nicht</span></div>
+  <table style="margin-top:12px">
+    <thead><tr><th>E-Mail</th><th>Rolle</th><th>Seit</th><th></th></tr></thead>
+    <tbody>
+    {% for p in people %}
+      <tr>
+        <td>{{ p.email }}{% if p.id == user.id %} <span class="muted small">(du)</span>{% endif %}</td>
+        <td>
+          {% if p.id == user.id %}{{ ROLES[p.role] }}
+          {% else %}
+          <form method="post" action="/team/{{ p.id }}/rolle" style="margin:0">
+            <select name="role" onchange="this.form.submit()">
+              {% for r in ("owner", "member", "advisor") %}<option value="{{ r }}" {{ 'selected' if p.role == r }}>{{ ROLES[r] }}</option>{% endfor %}
+            </select>
+          </form>
+          {% endif %}
+        </td>
+        <td class="muted small">{{ p.created_at.strftime("%d.%m.%Y") }}</td>
+        <td style="text-align:right">{% if p.id != user.id %}
+          <form method="post" action="/team/{{ p.id }}/entfernen" style="margin:0" onsubmit="return confirm('Zugang von {{ p.email }} wirklich entfernen?')"><button class="ghost small danger">Entfernen</button></form>
+        {% endif %}</td>
+      </tr>
+    {% endfor %}
+    {% for i in invites %}
+      <tr class="muted">
+        <td>{{ i.email }}</td><td>{{ ROLES[i.role] }} <span class="badge info">eingeladen</span></td>
+        <td class="small">bis {{ i.expires_at.strftime("%d.%m.%Y") }}</td>
+        <td style="text-align:right"><form method="post" action="/team/einladung/{{ i.token_hash }}/zurueckziehen" style="margin:0"><button class="ghost small">Zurückziehen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Person einladen</h2>
+  <form method="post" action="/team/einladen" class="grid">
+    <div><label>E-Mail-Adresse</label><input type="email" name="email" required placeholder="kollegin@deinefirma.de"></div>
+    <div><label>Rolle</label>
+      <select name="role">
+        <option value="member">{{ ROLE_TEXT.member }}</option>
+        <option value="advisor">{{ ROLE_TEXT.advisor }}</option>
+      </select></div>
+    <div><button>Einladen</button></div>
+  </form>
+  <p class="muted small" style="margin:10px 0 0"><b>Admin</b>: alles, auch Einstellungen, Tarif und Team. <b>Mitarbeiter</b>: Rechnungen prüfen, freigeben, schreiben, versenden und exportieren. <b>Steuerberater</b>: Rechnungen ansehen und DATEV-Export herunterladen – ändern kann er nichts. Eine Person zum Admin machen kannst du nach der Annahme über die Rolle.</p>
+</div>
+{% endblock %}

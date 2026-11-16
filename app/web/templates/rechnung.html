@@ -27,7 +27,7 @@
   <div class="card">
     <h2 style="margin-top:0">Erkannte Daten</h2>
     {% if inv %}
-    {% set editable = row.status == "needs_review" and not structured %}
+    {% set editable = can_write and row.status == "needs_review" and not structured %}
     {% if structured and row.direction == "in" %}<p class="muted small" style="margin-top:0">Strukturierte E-Rechnung: Daten genau so, wie der Absender sie geschickt hat. Bei Fehlern ablehnen und eine Korrektur anfordern.</p>{% endif %}
     <form method="post" action="/rechnung/{{ row.id }}/korrigieren">
     <table>
@@ -73,7 +73,9 @@
   <div>
     <div class="card">
       <h2 style="margin-top:0">Aktionen</h2>
-      {% if row.status == "needs_review" %}
+      {% if not can_write %}
+      <p class="muted small">Du hast Lesezugriff: ansehen und herunterladen.</p>
+      {% elif row.status == "needs_review" %}
       <div class="row">
         <form method="post" action="/rechnung/{{ row.id }}/freigeben">
           {% if iban_changed %}<label style="display:flex;gap:8px;font-weight:500;color:var(--ink);margin-bottom:8px"><input type="checkbox" name="iban_confirmed" required> Neue IBAN telefonisch beim Lieferanten bestätigt (bekannte Nummer, nicht die aus der Rechnung)</label>{% endif %}
@@ -101,7 +103,7 @@
       </div>
     </div>
 
-    {% if send %}
+    {% if send and can_write %}
     <div class="card" id="versand">
       <h2 style="margin-top:0">Versand</h2>
       {% for m in send.mails %}

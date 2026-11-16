@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Offline – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<div class="card" style="text-align:center;margin-top:40px">
+  <h1>Keine Internetverbindung</h1>
+  <p class="muted">Rechnungen werden aus Sicherheitsgründen nicht auf dem Gerät gespeichert. Sobald du wieder online bist, geht es weiter.</p>
+  <button onclick="location.reload()">Erneut versuchen</button>
+</div>
+{% endblock %}

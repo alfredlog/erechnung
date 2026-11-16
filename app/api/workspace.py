@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import page, read_upload, require_user
+from app.api.deps import page, read_upload, require_owner, require_user, require_writer
 from app.api.public import file_response
 from app.core.config import settings
 from app.core.db import get_db
@@ -66,7 +66,7 @@ def inbox(request: Request, f: str = "offen", user: User = Depends(require_user)
 
 
 @router.post("/eingang/upload")
-async def upload(files: list[UploadFile], user: User = Depends(require_user), db: Session = Depends(get_db)):
+async def upload(files: list[UploadFile], user: User = Depends(require_writer), db: Session = Depends(get_db)):
     org = _org(db, user)
     new = 0
     for file in files[:50]:
@@ -96,7 +96,7 @@ def detail(request: Request, invoice_id: int, user: User = Depends(require_user)
 
 @router.post("/rechnung/{invoice_id}/senden")
 def send_invoice(invoice_id: int, to: str = Form(""), subject: str = Form(""), body: str = Form(""),
-                 attachment: str = Form("pdf"), copy_to_me: str = Form(""), user: User = Depends(require_user),
+                 attachment: str = Form("pdf"), copy_to_me: str = Form(""), user: User = Depends(require_writer),
                  db: Session = Depends(get_db)):
     from urllib.parse import quote
     row = _invoice(db, user, invoice_id)
@@ -132,7 +132,7 @@ def outgoing_xml(invoice_id: int, user: User = Depends(require_user), db: Sessio
 
 
 @router.post("/rechnung/{invoice_id}/freigeben")
-def approve(invoice_id: int, iban_confirmed: str = Form(""), user: User = Depends(require_user),
+def approve(invoice_id: int, iban_confirmed: str = Form(""), user: User = Depends(require_writer),
             db: Session = Depends(get_db)):
     row = _invoice(db, user, invoice_id)
     if row.status not in ("needs_review", "approved"):
@@ -145,7 +145,7 @@ def approve(invoice_id: int, iban_confirmed: str = Form(""), user: User = Depend
 
 
 @router.post("/rechnung/{invoice_id}/keine-rechnung")
-def not_invoice(invoice_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def not_invoice(invoice_id: int, user: User = Depends(require_writer), db: Session = Depends(get_db)):
     row = _invoice(db, user, invoice_id)
     try:
         agent.mark_not_invoice(db, row, user.id)
@@ -155,7 +155,7 @@ def not_invoice(invoice_id: int, user: User = Depends(require_user), db: Session
 
 
 @router.post("/rechnung/{invoice_id}/doch-rechnung")
-def is_invoice(invoice_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def is_invoice(invoice_id: int, user: User = Depends(require_writer), db: Session = Depends(get_db)):
     row = _invoice(db, user, invoice_id)
     try:
         agent.mark_invoice(db, row, user.id)
@@ -166,7 +166,7 @@ def is_invoice(invoice_id: int, user: User = Depends(require_user), db: Session 
 
 
 @router.post("/rechnung/{invoice_id}/ablehnen")
-def reject(invoice_id: int, reason: str = Form(""), user: User = Depends(require_user),
+def reject(invoice_id: int, reason: str = Form(""), user: User = Depends(require_writer),
            db: Session = Depends(get_db)):
     row = _invoice(db, user, invoice_id)
     if row.status == "exported":
@@ -176,7 +176,7 @@ def reject(invoice_id: int, reason: str = Form(""), user: User = Depends(require
 
 
 @router.post("/rechnung/{invoice_id}/korrigieren")
-async def correct(request: Request, invoice_id: int, user: User = Depends(require_user),
+async def correct(request: Request, invoice_id: int, user: User = Depends(require_writer),
                   db: Session = Depends(get_db)):
     row = _invoice(db, user, invoice_id)
     if row.status not in ("needs_review",):
@@ -198,7 +198,7 @@ def outgoing(request: Request, user: User = Depends(require_user), db: Session =
 
 
 @router.get("/rechnungen/neu", response_class=HTMLResponse)
-def new_invoice(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def new_invoice(request: Request, user: User = Depends(require_writer), db: Session = Depends(get_db)):
     org = _org(db, user)
     return page(request, "erstellen.html", user, nav="neu", seller=invoicing.seller_from_org(org).model_dump(),
                 number=invoicing.next_number(org), logged_in=True, iban=org.iban, bic=org.bic,
@@ -206,7 +206,7 @@ def new_invoice(request: Request, user: User = Depends(require_user), db: Sessio
 
 
 @router.post("/rechnungen/neu")
-async def create_invoice(request: Request, format: str = "pdf", user: User = Depends(require_user),
+async def create_invoice(request: Request, format: str = "pdf", user: User = Depends(require_writer),
                          db: Session = Depends(get_db)):
     org = _org(db, user)
     try:
@@ -260,7 +260,7 @@ def _inbound_address(db: Session, org: Organization) -> str | None:
 
 
 @router.get("/eingangsadresse", response_class=HTMLResponse)
-def inbound_page(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def inbound_page(request: Request, user: User = Depends(require_writer), db: Session = Depends(get_db)):
     org = _org(db, user)
     address = _inbound_address(db, org)
     return page(request, "eingangsadresse.html", user, nav="eingang", address=address,
@@ -272,7 +272,7 @@ def inbound_page(request: Request, user: User = Depends(require_user), db: Sessi
 
 
 @router.post("/eingangsadresse/aendern")
-def rename_inbound(local_part: str = Form(""), user: User = Depends(require_user), db: Session = Depends(get_db)):
+def rename_inbound(local_part: str = Form(""), user: User = Depends(require_owner), db: Session = Depends(get_db)):
     from urllib.parse import quote
     if not settings.inbound_domain:
         raise HTTPException(404)
@@ -284,13 +284,13 @@ def rename_inbound(local_part: str = Form(""), user: User = Depends(require_user
 
 
 @router.get("/eingangsadresse/nachrichten", response_class=HTMLResponse)
-def inbound_notices(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def inbound_notices(request: Request, user: User = Depends(require_writer), db: Session = Depends(get_db)):
     return page(request, "_notices.html", user, notices=inbound.notices(db, user.organization_id))
 
 
 # ------------------------------------------------------------------ settings
 @router.get("/einstellungen", response_class=HTMLResponse)
-def settings_page(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db),
+def settings_page(request: Request, user: User = Depends(require_owner), db: Session = Depends(get_db),
                   error: str = ""):
     org = _org(db, user)
     return page(request, "einstellungen.html", user, nav="einstellungen", org=org,
@@ -301,7 +301,7 @@ def settings_page(request: Request, user: User = Depends(require_user), db: Sess
 
 
 @router.post("/einstellungen")
-async def save_settings(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+async def save_settings(request: Request, user: User = Depends(require_owner), db: Session = Depends(get_db)):
     org = _org(db, user)
     f = {k: str(v).strip() for k, v in (await request.form()).items()}
     org.profile = DraftParty(**{k: f.get(f"p_{k}", "") for k in DraftParty.model_fields}).model_dump()
@@ -331,7 +331,7 @@ async def save_settings(request: Request, user: User = Depends(require_user), db
 
 
 @router.post("/einstellungen/postfach-testen")
-def test_mailbox(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def test_mailbox(request: Request, user: User = Depends(require_owner), db: Session = Depends(get_db)):
     org = _org(db, user)
     try:
         conn = mail.connect(org.imap or {})

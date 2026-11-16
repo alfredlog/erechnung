@@ -31,6 +31,13 @@ FLASH = {
     "not_invoice": ("info", "Als „Keine Rechnung“ markiert – zählt nicht für dein Monatslimit."),
     "paid": ("ok", "Danke! Dein Tarif ist aktiv. Die Rechnung von Stripe kommt per E-Mail."),
     "password_reset": ("ok", "Neues Passwort gespeichert. Bitte melde dich jetzt an."),
+    "invited": ("ok", "Einladung verschickt. Der Link ist 7 Tage gültig."),
+    "invite_link": ("ok", "Einladung angelegt. Schick der Person den Link unten (gültig 7 Tage)."),
+    "role_changed": ("ok", "Rolle geändert."),
+    "user_removed": ("ok", "Zugang entfernt. Die Person kann sich nicht mehr anmelden."),
+    "share_login": ("info", "Bitte melde dich an und teile die Rechnung dann noch einmal."),
+    "read_only": ("info", "Mit deinem Zugang kannst du keine Rechnungen hochladen."),
+    "notify_saved": ("ok", "Benachrichtigungen gespeichert."),
     "address_changed": ("ok", "Neue Eingangsadresse gespeichert. Die alte funktioniert weiterhin."),
     "mail_queued": ("ok", "E-Mail wird versendet. Der Status erscheint unten bei „Versand“."),
 }
@@ -54,10 +61,30 @@ def require_user(user: User | None = Depends(optional_user)) -> User:
     return user
 
 
+ROLES = {"owner": "Admin", "member": "Mitarbeiter", "advisor": "Steuerberater"}
+WRITERS = ("owner", "member")
+
+
+def require_writer(user: User = Depends(require_user)) -> User:
+    """Admins and employees. Tax advisors may only read and export."""
+    if user.role not in WRITERS:
+        raise HTTPException(403, "Mit deinem Zugang kannst du Rechnungen nur ansehen und exportieren.")
+    return user
+
+
+def require_owner(user: User = Depends(require_user)) -> User:
+    if user.role != "owner":
+        raise HTTPException(403, "Nur Admins können das ändern.")
+    return user
+
+
 def page(request: Request, name: str, user: User | None = None, **ctx):
     flash = FLASH.get(request.query_params.get("m", ""))
+    role = user.role if user else None
     return templates.TemplateResponse(request, name, {"app_name": settings.app_name, "user": user,
-                                                      "flash": flash, **ctx})
+                                                      "flash": flash, "role": role, "ROLES": ROLES,
+                                                      "can_write": role in WRITERS, "is_owner": role == "owner",
+                                                      **ctx})
 
 
 async def read_upload(file: UploadFile) -> bytes:

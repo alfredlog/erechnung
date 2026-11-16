@@ -250,3 +250,34 @@ class Subscription(Base):
     stripe_customer_id: Mapped[str] = mapped_column(String(100), default="", index=True)
     stripe_subscription_id: Mapped[str] = mapped_column(String(100), default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class Invitation(Base):
+    """Invitation of a colleague or tax advisor. Only the hash of the link token is stored."""
+    __tablename__ = "invitations"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(320))
+    role: Mapped[str] = mapped_column(String(20))           # member / advisor
+    invited_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class NotificationSetting(Base):
+    """Per user: which e-mails they want."""
+    __tablename__ = "notification_settings"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    daily_digest: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class SentNotification(Base):
+    """Remembers which notification went out, so nobody gets the same one twice."""
+    __tablename__ = "sent_notifications"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    ref: Mapped[str] = mapped_column(String(60))
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    __table_args__ = (UniqueConstraint("user_id", "kind", "ref"),)

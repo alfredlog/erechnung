@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import page, require_user
+from app.api.deps import page, require_owner, require_writer
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.tables import Organization, User
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 @router.get("/tarif", response_class=HTMLResponse)
-def plan_page(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def plan_page(request: Request, user: User = Depends(require_writer), db: Session = Depends(get_db)):
     org = db.get(Organization, user.organization_id)
     return page(request, "tarif.html", user, nav="tarif", u=billing.usage(db, org), PLANS=billing.PLANS,
                 PAID=billing.PAID, error=request.query_params.get("error", ""),
@@ -27,7 +27,7 @@ def plan_page(request: Request, user: User = Depends(require_user), db: Session 
 
 
 @router.post("/tarif/checkout")
-def checkout(plan: str = Form(...), interval: str = Form("month"), user: User = Depends(require_user),
+def checkout(plan: str = Form(...), interval: str = Form("month"), user: User = Depends(require_owner),
              db: Session = Depends(get_db)):
     from urllib.parse import quote
     org = db.get(Organization, user.organization_id)
@@ -41,7 +41,7 @@ def checkout(plan: str = Form(...), interval: str = Form("month"), user: User = 
 
 
 @router.post("/tarif/portal")
-def portal(user: User = Depends(require_user), db: Session = Depends(get_db)):
+def portal(user: User = Depends(require_owner), db: Session = Depends(get_db)):
     from urllib.parse import quote
     try:
         return RedirectResponse(billing.portal_url(db, db.get(Organization, user.organization_id)), 303)

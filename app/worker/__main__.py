@@ -55,6 +55,8 @@ def main() -> None:
                 schedule_mailboxes(db)
                 from app.services import billing
                 billing.release_all(db)  # invoices held by the monthly limit, once there is room
+                from app.services import notify
+                notify.run_due(db)       # daily digest at 8:00, trial reminders
                 last_schedule = time.monotonic()
             job = jobs.claim(db)
             if job:

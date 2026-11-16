@@ -23,6 +23,7 @@
 {% endblock %}
 {% block content %}
 <h1>Tarif</h1>
+{% if is_owner %}{% include '_settings_nav.html' %}{% endif %}
 {% set p = u.plan %}
 {% if not u.enabled %}
   <p class="lead">Auf diesem Server sind keine Tarife aktiv – alle Funktionen sind unbegrenzt nutzbar.</p>
