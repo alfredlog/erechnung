@@ -14,7 +14,7 @@ This service handles both directions:
 ## Architecture
 
 ```
-            ┌──────────── Nginx (TLS, domain) ────────────┐
+            ┌──────────── Caddy (TLS, domain) ────────────┐
  browser ──►│  api (FastAPI + Jinja/HTMX)   :8100          │
             │     │ queue (jobs table)                     │
             │  worker  ── OCR (Tesseract) ── LLM (EU API)  │
