@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Rechnungen per E-Mail – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block head %}
+<style>
+  .addr { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--soft); border-radius:10px; padding:12px 14px; }
+  .addr code { font-size:18px; font-weight:700; word-break:break-all; flex:1; }
+  details.guide { border:1px solid var(--line); border-radius:10px; padding:12px 16px; background:#fff; }
+  details.guide + details.guide { margin-top:8px; }
+  details.guide summary { font-weight:700; cursor:pointer; }
+  details.guide ol { margin:10px 0 4px; padding-left:22px; } details.guide li { margin:6px 0; }
+  details.guide p.note { background:var(--warn-bg); color:var(--warn); border-radius:8px; padding:8px 12px; font-size:14px; margin:10px 0 0; }
+  code.inline { background:var(--soft); padding:1px 6px; border-radius:5px; font-size:14px; }
+  .notice { border-top:1px solid var(--line); padding:12px 0; } .notice:first-child { border-top:0; padding-top:0; }
+  pre.mailbody { white-space:pre-wrap; word-break:break-word; font:13px/1.5 ui-monospace, monospace; background:var(--soft); padding:10px; border-radius:8px; max-height:320px; overflow:auto; }
+  textarea.tpl { height:120px; font-size:14px; }
+</style>
+{% endblock %}
+{% block content %}
+<h1>Rechnungen per E-Mail</h1>
+<p class="lead">Du brauchst uns kein E-Mail-Passwort zu geben. Deine Firma hat eine eigene Eingangsadresse – alles, was dort ankommt, liest und prüft der Agent automatisch.</p>
+
+{% if not address %}
+<div class="card"><p style="margin:0">Der E-Mail-Empfang ist auf diesem Server noch nicht eingerichtet. Du kannst Rechnungen im <a href="/eingang">Eingang</a> hochladen.</p></div>
+{% else %}
+<div class="card">
+  <label>Deine Eingangsadresse</label>
+  <div class="addr"><code id="addr">{{ address }}</code><button type="button" class="small" data-copy="addr">Kopieren</button></div>
+  <p class="muted small" style="margin:10px 0 0">Angenommen werden PDF, XRechnung/ZUGFeRD (XML) und Scans (Bilder). E-Mails ohne Rechnung erscheinen unten unter „Nachrichten“.</p>
+</div>
+
+<h2>Weg 1 – am einfachsten: Lieferanten schicken direkt an diese Adresse</h2>
+<div class="card">
+  <p style="margin-top:0">Gib die Adresse deinen Lieferanten als Rechnungsadresse. Diesen Text kannst du ihnen schicken:</p>
+  <textarea class="tpl" id="tpl" readonly>Guten Tag,
+
+bitte senden Sie Rechnungen an uns ab sofort an folgende Adresse:
+{{ address }}
+
+Gerne als XRechnung, ZUGFeRD oder PDF.
+
+Vielen Dank und freundliche Grüße
+{{ company }}</textarea>
+  <div class="row" style="margin-top:10px"><button type="button" class="small ghost" data-copy="tpl">Text kopieren</button></div>
+</div>
+
+<h2>Weg 2 – Rechnungen aus deinem Postfach automatisch weiterleiten</h2>
+<p class="muted">Wähle deinen E-Mail-Anbieter. Am besten nur E-Mails mit Anhang (oder von bestimmten Lieferanten) weiterleiten, nicht dein ganzes Postfach. Wähle immer „Kopie behalten“, wenn es angeboten wird.</p>
+
+<details class="guide"><summary>Gmail / Google Workspace</summary>
+  <ol>
+    <li><a href="https://mail.google.com/mail/u/0/#settings/fwdandpop" target="_blank" rel="noopener">Gmail-Einstellungen „Weiterleitung und POP/IMAP“ öffnen</a>.</li>
+    <li>„Weiterleitungsadresse hinzufügen“ klicken, deine Eingangsadresse einfügen, „Weiter“ und „Fortfahren“.</li>
+    <li>Google schickt eine Bestätigung an deine Eingangsadresse. Sie erscheint in ein paar Sekunden unten unter <b>Nachrichten</b>: dort den Link öffnen oder den Code in Gmail eingeben.</li>
+    <li>Jetzt einen Filter anlegen, damit nur Rechnungen weitergeleitet werden: in Gmail oben in der Suche auf das Filter-Symbol, bei „Enthält die Wörter“ <code class="inline">has:attachment (filename:pdf OR filename:xml)</code> eingeben, „Filter erstellen“, „Weiterleiten an“ deine Eingangsadresse wählen, „Filter erstellen“.</li>
+  </ol>
+</details>
+
+<details class="guide"><summary>Outlook.com / Hotmail / Microsoft 365</summary>
+  <ol>
+    <li>Regeln öffnen: <a href="https://outlook.live.com/mail/0/options/mail/rules" target="_blank" rel="noopener">privates Outlook.com</a> oder <a href="https://outlook.office.com/mail/options/mail/rules" target="_blank" rel="noopener">Microsoft 365 (Firma)</a>.</li>
+    <li>„Neue Regel hinzufügen“, Name z. B. „Rechnungen“.</li>
+    <li>Bedingung „Hat Anhang“, Aktion „Weiterleiten an“, deine Eingangsadresse einfügen, speichern.</li>
+  </ol>
+  <p class="note">In Firmenkonten kann der Administrator Weiterleitungen nach außen gesperrt haben. Dann Weg 1 nutzen oder den Administrator fragen.</p>
+</details>
+
+<details class="guide"><summary>iCloud Mail</summary>
+  <ol>
+    <li><a href="https://www.icloud.com/mail" target="_blank" rel="noopener">iCloud Mail im Browser öffnen</a>, oben auf das Zahnrad/„…“ und „Einstellungen“ → „Regeln“.</li>
+    <li>„Regel hinzufügen“: Bedingung „Ist von“ und die Absenderadresse eines Lieferanten.</li>
+    <li>Aktion „An eine E-Mail-Adresse weiterleiten“, deine Eingangsadresse einfügen, fertig. Für jeden Lieferanten eine Regel.</li>
+  </ol>
+  <p class="note">iCloud kann nicht nach Anhängen filtern. Bei vielen Lieferanten ist Weg 1 einfacher.</p>
+</details>
+
+<details class="guide"><summary>GMX / WEB.DE</summary>
+  <ol>
+    <li>Im Postfach einloggen (<a href="https://www.gmx.net" target="_blank" rel="noopener">GMX</a> / <a href="https://web.de" target="_blank" rel="noopener">WEB.DE</a>), dann „Einstellungen“ → „Filterregeln“.</li>
+    <li>„Neue Filterregel“: Bedingung z. B. „Absender enthält“ und die Adresse oder Domain des Lieferanten.</li>
+    <li>Aktion „Weiterleiten an“, deine Eingangsadresse einfügen, speichern.</li>
+  </ol>
+  <p class="note">Wird die Weiterleitung in deinem Tarif nicht angeboten, nutze Weg 1.</p>
+</details>
+
+<details class="guide"><summary>Telekom (T-Online)</summary>
+  <ol>
+    <li><a href="https://email.t-online.de" target="_blank" rel="noopener">E-Mail Center öffnen</a>, dann „Einstellungen“ → „Filterregeln“.</li>
+    <li>Neue Regel mit dem Absender des Lieferanten, Aktion „Weiterleiten an“ deine Eingangsadresse.</li>
+  </ol>
+</details>
+
+<details class="guide"><summary>IONOS, STRATO oder eigene Firmendomain</summary>
+  <ol>
+    <li>Webmail öffnen (<a href="https://mail.ionos.de" target="_blank" rel="noopener">IONOS</a> / <a href="https://webmail.strato.de" target="_blank" rel="noopener">STRATO</a>), „Einstellungen“ → „Filter“ bzw. „Regeln“.</li>
+    <li>Neue Regel: Bedingung „Hat Anhang“ oder „Absender“, Aktion „Weiterleiten an“ deine Eingangsadresse, Kopie behalten.</li>
+  </ol>
+  <p class="note">Tipp für eigene Domains: Eine Adresse wie rechnungen@deinefirma.de anlegen, die komplett an deine Eingangsadresse weiterleitet, und diese den Lieferanten geben.</p>
+</details>
+
+<h2>Nachrichten</h2>
+<div class="card" hx-get="/eingangsadresse/nachrichten" hx-trigger="every 15s" hx-swap="innerHTML">
+  {% include "_notices.html" %}
+</div>
+
+<details class="guide" style="margin-top:28px"><summary>Lieber ein eigenes Postfach per IMAP abrufen?</summary>
+  <p class="muted small">Für Fortgeschrittene: Unter <a href="/einstellungen">Einstellungen</a> kann der Agent auch ein Postfach direkt abrufen. Dafür brauchst du die Zugangsdaten – nutze dafür nur ein reines Rechnungs-Postfach und, wenn möglich, ein App-Passwort.</p>
+</details>
+{% endif %}
+
+<script>
+document.querySelectorAll("[data-copy]").forEach(btn => btn.addEventListener("click", async () => {
+  const el = document.getElementById(btn.dataset.copy);
+  const text = el.value !== undefined ? el.value : el.textContent;
+  try { await navigator.clipboard.writeText(text); } catch (e) { if (el.select) { el.select(); document.execCommand("copy"); } }
+  const old = btn.textContent; btn.textContent = "Kopiert ✓"; setTimeout(() => btn.textContent = old, 1500);
+}));
+</script>
+{% endblock %}

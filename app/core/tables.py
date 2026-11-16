@@ -170,3 +170,28 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(50))
     detail: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class InboundAddress(Base):
+    """The company's own receiving address: <local_part>@<INBOUND_DOMAIN>.
+
+    Customers forward invoices there (or give it to suppliers), so no mailbox password is needed.
+    """
+    __tablename__ = "inbound_addresses"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), unique=True)
+    local_part: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class InboundNotice(Base):
+    """A mail to the receiving address without an invoice attachment, e.g. the confirmation mail
+    Gmail or Outlook send when a forwarding is set up. Shown to the customer, last ones only."""
+    __tablename__ = "inbound_notices"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    sender: Mapped[str] = mapped_column(String(320), default="")
+    subject: Mapped[str] = mapped_column(String(500), default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    links: Mapped[list] = mapped_column(JSON, default=list)

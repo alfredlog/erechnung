@@ -32,9 +32,17 @@
       <span>Sichere Rechnungen automatisch freigeben<br><span class="muted small">Nur wenn alle Werte sicher erkannt sind, die Rechnung fehlerfrei ist, der Lieferant schon einmal bestätigt wurde und die IBAN gleich geblieben ist. Sonst fragt der Agent immer.</span></span></label>
   </div>
 
+  {% if inbound_address %}
   <div class="card">
-    <h2 style="margin-top:0">Rechnungs-Postfach (IMAP)</h2>
-    <p class="muted small">Ein E-Mail-Postfach, an das Lieferanten ihre Rechnungen schicken (z. B. rechnungen@deinefirma.de). Der Agent holt die Anhänge alle paar Minuten ab.</p>
+    <h2 style="margin-top:0">Rechnungen per E-Mail</h2>
+    <p class="muted small">Deine Eingangsadresse – kein Passwort nötig. Leite Rechnungen dorthin weiter oder gib sie deinen Lieferanten.</p>
+    <p style="margin:0"><strong>{{ inbound_address }}</strong> · <a href="/eingangsadresse">Anleitung zur Weiterleitung</a></p>
+  </div>
+  {% endif %}
+
+  <details class="card" {% if imap.host or not inbound_address %}open{% endif %}>
+    <summary style="cursor:pointer"><h2 style="margin:0;display:inline">Eigenes Postfach per IMAP abrufen</h2>{% if inbound_address %} <span class="muted small">(für Fortgeschrittene)</span>{% endif %}</summary>
+    <p class="muted small" style="margin-top:12px">Nur nötig, wenn du statt der Eingangsadresse ein eigenes Postfach abrufen lassen willst. Nutze dafür ein reines Rechnungs-Postfach (z. B. rechnungen@deinefirma.de), nicht dein Hauptpostfach – und, wenn dein Anbieter es anbietet, ein App-Passwort.</p>
     <div class="grid">
       <div><label>E-Mail-Adresse des Postfachs</label><input type="email" id="imap_user" name="imap_user" value="{{ imap.user or '' }}" placeholder="rechnungen@deinefirma.de" autocomplete="off"></div>
       <div><label>E-Mail-Anbieter</label>
@@ -64,7 +72,7 @@
         <div><label>Ordner</label><input type="text" name="imap_folder" value="{{ imap.folder or 'INBOX' }}"></div>
       </div>
     </details>
-  </div>
+  </details>
   <script>
   (function () {
     // IMAP-Server bekannter Anbieter. Port ist überall 993 (SSL/TLS).

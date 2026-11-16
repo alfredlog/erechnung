@@ -1,5 +1,5 @@
-# Production stack on the VPS. Nginx (already running for PDF Libre) forwards the
-# product domain to 127.0.0.1:8100.
+# Production stack on the VPS. Caddy (on the host) forwards the product domain to
+# 127.0.0.1:8100. Port 25 receives the customers' invoice mails (receive only).
 x-app: &app
   build: .
   env_file: .env
@@ -22,6 +22,12 @@ services:
     <<: *app
     command: ["python", "-m", "app.worker"]
     mem_limit: 768m
+
+  mailin:                         # receives mails for *@INBOUND_DOMAIN, never sends
+    <<: *app
+    command: ["python", "-m", "app.mailin"]
+    ports: ["25:2525"]
+    mem_limit: 256m
 
   kosit:                          # official XRechnung validator (Java)
     build: docker/kosit

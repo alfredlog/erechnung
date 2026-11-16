@@ -43,7 +43,18 @@ sudo systemctl reload caddy
 
 Caddy gets the HTTPS certificate automatically and sets the X-Forwarded headers.
 
-## 4. Backups (daily)
+## 4. Receiving invoice mails (port 25)
+
+Every company gets its own address `<firma>-xxxxxx@eingang.erechnungagent.de` (page "Rechnungen per
+E-Mail"). The `mailin` container receives these mails; it never sends mail and refuses unknown addresses.
+
+1. `.env`: `INBOUND_DOMAIN=eingang.erechnungagent.de`
+2. DNS at IONOS: an **MX** record for host `eingang`, pointing to `erechnungagent.de`, priority 10.
+3. Firewall: `sudo ufw allow 25/tcp` (Docker publishes the port anyway; this keeps ufw honest).
+4. `docker compose up -d --build`, then test from outside:
+   `swaks --to <address> --server eingang.erechnungagent.de --attach @rechnung.pdf` or simply send a mail.
+
+## 5. Backups (daily)
 
 ```bash
 mkdir -p ~/backups/erechnung
@@ -54,13 +65,13 @@ crontab -e
 
 Copy the backups regularly to a second place (e.g. netcup storage or your laptop).
 
-## 5. Update
+## 6. Update
 
 ```bash
 cd ~/apps/erechnung && git pull && docker compose up -d --build
 ```
 
-## 6. PDF Libre tools
+## 7. PDF Libre tools
 
 PDF Libre's `.env`: `ERECHNUNG_API_URL=http://127.0.0.1:8100`. The tools "XRechnung anzeigen"
 and "E-Rechnung prüfen" call `POST /api/v1/render`.

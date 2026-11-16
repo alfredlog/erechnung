@@ -31,6 +31,10 @@ class Settings:
     llm_base_url: str = field(default_factory=lambda: _env("LLM_BASE_URL", "https://api.mistral.ai/v1"))
     llm_api_key: str = field(default_factory=lambda: _env("LLM_API_KEY"))
     llm_model: str = field(default_factory=lambda: _env("LLM_MODEL", "mistral-small-latest"))
+    # Domain for the customers' receiving addresses (MX record → this server). Empty = feature off.
+    inbound_domain: str = field(default_factory=lambda: _env("INBOUND_DOMAIN").strip().lower())
+    smtp_port: int = field(default_factory=lambda: int(_env("SMTP_PORT", "2525")))
+    max_mail_mb: int = field(default_factory=lambda: int(_env("MAX_MAIL_MB", "25")))
     imap_poll_minutes: int = field(default_factory=lambda: int(_env("IMAP_POLL_MINUTES", "10")))
 
     @property

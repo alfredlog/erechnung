@@ -15,12 +15,13 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import page, read_upload, require_user
 from app.api.public import file_response
+from app.core.config import settings
 from app.core.db import get_db
 from app.core.security import encrypt
 from app.core.tables import AuditLog, Export, Invoice, Organization, User
 from app.domain.export.datev import DatevSettings
 from app.domain.generate.draft import DraftParty, InvoiceDraft
-from app.services import agent, exports, invoicing, jobs, mail, storage
+from app.services import agent, exports, inbound, invoicing, jobs, mail, storage
 
 router = APIRouter()
 
@@ -57,7 +58,8 @@ def inbox(request: Request, f: str = "offen", user: User = Depends(require_user)
     org = _org(db, user)
     template = "_inbox_rows.html" if request.headers.get("HX-Request") else "eingang.html"
     return page(request, template, user, nav="eingang", rows=rows, stats=stats, f=f, STATUS=STATUS,
-                processing=counts.get("processing", 0), mailbox=(org.imap or {}).get("user"))
+                processing=counts.get("processing", 0), mailbox=(org.imap or {}).get("user"),
+                inbound_address=_inbound_address(db, org))
 
 
 @router.post("/eingang/upload")
@@ -202,6 +204,25 @@ def download_export(export_id: int, user: User = Depends(require_user), db: Sess
                     headers={"Content-Disposition": f'attachment; filename="{export.filename}"'})
 
 
+# ------------------------------------------------------------------ receiving address
+def _inbound_address(db: Session, org: Organization) -> str | None:
+    if not settings.inbound_domain:
+        return None
+    return inbound.full_address(inbound.address_for(db, org))
+
+
+@router.get("/eingangsadresse", response_class=HTMLResponse)
+def inbound_page(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+    org = _org(db, user)
+    return page(request, "eingangsadresse.html", user, nav="eingang", address=_inbound_address(db, org),
+                notices=inbound.notices(db, org.id), company=org.name)
+
+
+@router.get("/eingangsadresse/nachrichten", response_class=HTMLResponse)
+def inbound_notices(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
+    return page(request, "_notices.html", user, notices=inbound.notices(db, user.organization_id))
+
+
 # ------------------------------------------------------------------ settings
 @router.get("/einstellungen", response_class=HTMLResponse)
 def settings_page(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db),
@@ -210,7 +231,8 @@ def settings_page(request: Request, user: User = Depends(require_user), db: Sess
     return page(request, "einstellungen.html", user, nav="einstellungen", org=org,
                 profile=invoicing.seller_from_org(org), datev=DatevSettings.from_dict(org.datev),
                 imap={k: v for k, v in (org.imap or {}).items() if k != "password"},
-                has_imap_password=bool((org.imap or {}).get("password")), error=error)
+                has_imap_password=bool((org.imap or {}).get("password")), error=error,
+                inbound_address=_inbound_address(db, org))
 
 
 @router.post("/einstellungen")

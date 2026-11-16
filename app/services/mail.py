@@ -33,6 +33,18 @@ def _filename(part) -> str | None:
         return name
 
 
+IMAGES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
+MIN_IMAGE_BYTES = 30_000  # smaller pictures are logos/icons in signatures, not scanned invoices
+
+
+def _is_signature_image(part, name: str | None, data: bytes) -> bool:
+    is_image = part.get_content_maintype() == "image" or (name or "").lower().endswith(IMAGES)
+    if not is_image:
+        return False
+    inline = (part.get("Content-Disposition") or "").lower().startswith("inline") or part.get("Content-ID")
+    return bool(inline) or len(data) < MIN_IMAGE_BYTES
+
+
 def attachments(raw: bytes) -> list[tuple[str, bytes]]:
     msg = email.message_from_bytes(raw)
     out = []
@@ -41,7 +53,7 @@ def attachments(raw: bytes) -> list[tuple[str, bytes]]:
         ctype = part.get_content_type()
         if name and name.lower().endswith(ACCEPTED) or ctype in ("application/pdf", "application/xml", "text/xml"):
             data = part.get_payload(decode=True)
-            if data:
+            if data and not _is_signature_image(part, name, data):
                 out.append((name or f"anhang.{ 'pdf' if 'pdf' in ctype else 'xml'}", data))
     return out
 

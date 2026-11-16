@@ -2,7 +2,7 @@
 {% block title %}Eingang – {{ app_name }}{% endblock %}
 {% block content %}
 <div class="row spread"><h1>Rechnungseingang</h1></div>
-<p class="lead">Rechnungen hochladen{% if mailbox %} oder an <strong>{{ mailbox }}</strong> schicken{% endif %}. Der Agent liest, prüft und gibt sichere Rechnungen selbst frei. Alles andere landet hier unter „Offen“ – mit Begründung.</p>
+<p class="lead">Rechnungen hochladen{% if inbound_address %} oder per E-Mail an <strong>{{ inbound_address }}</strong> schicken (<a href="/eingangsadresse">so geht's</a>){% elif mailbox %} oder an <strong>{{ mailbox }}</strong> schicken{% endif %}. Der Agent liest, prüft und gibt sichere Rechnungen selbst frei. Alles andere landet hier unter „Offen“ – mit Begründung.</p>
 
 <div class="stats">
   {% for key, label in [("offen", "Offen"), ("freigegeben", "Freigegeben"), ("exportiert", "Exportiert"), ("abgelehnt", "Abgelehnt")] %}

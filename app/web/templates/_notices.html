@@ -1,0 +1,12 @@
+{% if notices %}
+  {% for n in notices %}
+  <div class="notice">
+    <div class="row spread"><b>{{ n.subject or "(kein Betreff)" }}</b><span class="muted small">{{ n.received_at.strftime("%d.%m.%Y %H:%M") }}</span></div>
+    <div class="muted small">von {{ n.sender }}</div>
+    {% if n.links %}<div class="row" style="margin-top:8px">{% for l in n.links[:3] %}<a class="btn ghost small" href="{{ l }}" target="_blank" rel="noopener noreferrer nofollow">{{ l.split("/")[2] }} öffnen</a>{% endfor %}</div>{% endif %}
+    <details style="margin-top:6px"><summary class="small">Nachricht anzeigen</summary><pre class="mailbody">{{ n.body[:4000] }}</pre></details>
+  </div>
+  {% endfor %}
+{% else %}
+  <p class="muted small" style="margin:0">Noch keine. Bestätigungs-E-Mails (z. B. von Gmail beim Einrichten der Weiterleitung) erscheinen hier automatisch.</p>
+{% endif %}

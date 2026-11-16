@@ -22,6 +22,7 @@ dependencies = [
   "sqlalchemy>=2.0",
   "psycopg[binary]>=3.1",
   "cryptography>=42",
+  "aiosmtpd>=1.4",
 ]
 
 [project.optional-dependencies]
