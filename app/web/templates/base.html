@@ -15,12 +15,27 @@
   <meta name="apple-mobile-web-app-title" content="E-Rechnung">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <script src="/static/htmx.min.js" defer></script>
+  <link rel="preload" href="/static/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/space-grotesk-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <style>
+    @font-face { font-family:"Inter"; font-weight:400; font-display:swap; src:url(/static/fonts/inter-latin-400-normal.woff2) format("woff2"); }
+    @font-face { font-family:"Inter"; font-weight:500; font-display:swap; src:url(/static/fonts/inter-latin-500-normal.woff2) format("woff2"); }
+    @font-face { font-family:"Inter"; font-weight:600; font-display:swap; src:url(/static/fonts/inter-latin-600-normal.woff2) format("woff2"); }
+    @font-face { font-family:"Inter"; font-weight:700; font-display:swap; src:url(/static/fonts/inter-latin-700-normal.woff2) format("woff2"); }
+    @font-face { font-family:"Space Grotesk"; font-weight:500; font-display:swap; src:url(/static/fonts/space-grotesk-latin-500-normal.woff2) format("woff2"); }
+    @font-face { font-family:"Space Grotesk"; font-weight:700; font-display:swap; src:url(/static/fonts/space-grotesk-latin-700-normal.woff2) format("woff2"); }
     :root { --ink:#16202e; --muted:#5b6475; --line:#dde1e8; --bg:#f5f6f8; --card:#fff; --soft:#eef1f6;
             --ok:#1f7a4d; --ok-bg:#e4f3ea; --warn:#8a5a00; --warn-bg:#fcf1d8; --err:#a12b2b; --err-bg:#fbe8e8;
             --info:#1d4e9e; --info-bg:#e6eefb; --accent:#1846c4; --accent-ink:#fff; }
     * { box-sizing: border-box; }
-    body { margin:0; font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:var(--bg); }
+    [hidden] { display:none !important; }
+    :root { --display:"Space Grotesk", "Inter", system-ui, sans-serif; }
+    body { margin:0; font:16px/1.55 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:var(--bg);
+           -webkit-font-smoothing:antialiased; font-feature-settings:"cv11", "ss03"; }
+    h1, h2, h3, .brand, .display { font-family:var(--display); }
+    .num, .amount, .stats b, .price { font-variant-numeric:tabular-nums; }
+    :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
+    @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
     a { color: var(--accent); }
     header.top { background:var(--card); border-bottom:1px solid var(--line); }
     header.top .wrap { max-width:1100px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
@@ -47,8 +62,10 @@
     }
     main { max-width:1100px; margin:0 auto; padding:28px 16px 64px; }
     main.narrow { max-width:860px; }
-    h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.01em; } h2 { font-size:18px; margin:28px 0 10px; }
-    .lead { color:var(--muted); margin:0 0 22px; }
+    h1 { font-size:30px; line-height:1.15; margin:0 0 6px; letter-spacing:-.02em; font-weight:700; }
+    h2 { font-size:19px; margin:28px 0 10px; letter-spacing:-.01em; font-weight:700; }
+    h3 { font-weight:700; letter-spacing:-.005em; }
+    .lead { color:var(--muted); margin:0 0 22px; max-width:72ch; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; }
     .card + .card { margin-top:16px; }
     .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
@@ -72,7 +89,7 @@
     .muted { color:var(--muted); } .small { font-size:14px; }
     table { width:100%; border-collapse:collapse; font-size:15px; }
     th, td { text-align:left; padding:8px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
-    th { font-size:13px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+    th { font-size:13px; color:var(--muted); font-weight:600; }
     td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; white-space:nowrap; }
     tr.link { cursor:pointer; } tr.link:hover td { background:var(--soft); }
     .table-wrap { overflow-x:auto; }
@@ -89,6 +106,78 @@
     form.camera { display:none; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
     form.camera label.btn { cursor:pointer; }
     @media (max-width: 760px), (display-mode: standalone) { form.camera { display:flex; } }
+    .ios-install { position:fixed; left:12px; right:12px; bottom:calc(14px + env(safe-area-inset-bottom)); z-index:50;
+      display:flex; gap:12px; align-items:center; background:#fff; color:var(--ink); border:1px solid var(--line);
+      border-radius:14px; padding:12px 40px 12px 12px; box-shadow:0 12px 32px -12px rgba(22,32,46,.45); font-size:14px; line-height:1.45; }
+    .ios-install[hidden] { display:none; }
+    .ios-install img { border-radius:10px; flex:0 0 auto; }
+    .ios-install .x { position:absolute; top:6px; right:6px; background:transparent; color:var(--muted); padding:6px 9px; font-size:15px; }
+    .ios-install .arrow { position:absolute; bottom:-8px; left:50%; width:14px; height:14px; margin-left:-7px; background:#fff;
+      border-right:1px solid var(--line); border-bottom:1px solid var(--line); transform:rotate(45deg); }
+    .ios-install.top { top:12px; bottom:auto; right:12px; left:auto; max-width:360px; }
+    .ios-install.top .arrow { top:-8px; bottom:auto; left:auto; right:60px; transform:rotate(225deg); }
+    .inv-list { display:flex; flex-direction:column; }
+    .inv-row { display:grid; grid-template-columns:128px minmax(180px,1.3fr) 128px minmax(200px,2fr); gap:14px; align-items:center;
+      padding:12px 10px; border-bottom:1px solid var(--line); color:var(--ink); text-decoration:none; border-radius:8px; }
+    .inv-row:not(.head):hover { background:var(--soft); }
+    .inv-row.head { font-size:13px; color:var(--muted); font-weight:600; padding-top:0; }
+    .inv-row .who b { display:block; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .inv-row .who small { color:var(--muted); font-size:13px; }
+    .inv-row .amount { text-align:right; font-family:var(--display); font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .inv-row.head .amount { font-family:inherit; font-weight:600; }
+    .inv-row .hint { color:var(--muted); font-size:14px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .inv-row .more { color:var(--accent); white-space:nowrap; }
+    .empty { color:var(--muted); padding:8px 4px; } .empty b { color:var(--ink); }
+    @media (max-width: 760px) {
+      .inv-row.head { display:none; }
+      .inv-row { grid-template-columns:1fr auto; grid-template-areas:"who amount" "st st" "hint hint"; gap:4px 12px; padding:14px 6px; }
+      .inv-row .who { grid-area:who; min-width:0; } .inv-row .amount { grid-area:amount; align-self:start; }
+      .inv-row .st { grid-area:st; } .inv-row .hint { grid-area:hint; }
+    }
+    .app-back { display:none; color:var(--ink); margin:0 -6px 0 -8px; padding:6px; border-radius:8px; }
+    .tabbar { display:none; }
+    html.standalone .app-back:not([hidden]) { display:inline-flex; }
+    html.standalone nav.main, html.standalone header.top .who { display:none; }
+    html.standalone header.top .wrap { padding:8px 14px; padding-top:calc(8px + env(safe-area-inset-top)); }
+    html.standalone .tabbar { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:40; background:#fff;
+      border-top:1px solid var(--line); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); }
+    html.standalone .tabbar a { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:11px; font-weight:600;
+      color:var(--muted); text-decoration:none; padding:4px 0; }
+    html.standalone .tabbar a.on { color:var(--accent); }
+    html.standalone .tabbar svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    html.standalone main { padding-bottom:calc(90px + env(safe-area-inset-bottom)); }
+    html.standalone footer.site { display:none; }
+    .start { margin-bottom:18px; }
+    .start-steps { list-style:none; counter-reset:step; display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:0; margin:14px 0 0; }
+    .start-steps li { counter-increment:step; }
+    .start-steps a { display:block; height:100%; padding:12px 12px 12px 44px; position:relative; border:1px solid var(--line);
+      border-radius:10px; text-decoration:none; color:var(--ink); }
+    .start-steps a:hover { border-color:var(--accent); }
+    .start-steps a::before { content:counter(step); position:absolute; left:12px; top:12px; width:22px; height:22px; border-radius:50%;
+      border:1.5px solid var(--accent); color:var(--accent); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .start-steps li.done a::before { content:"✓"; background:#12a066; border-color:#12a066; color:#fff; }
+    .start-steps li.done b { color:var(--muted); text-decoration:line-through; text-decoration-color:#b9c0cc; }
+    .start-steps b { display:block; font-size:15px; } .start-steps span { display:block; color:var(--muted); font-size:13px; line-height:1.4; margin-top:2px; }
+    @media (max-width: 900px) { .start-steps { grid-template-columns:1fr 1fr; } }
+    @media (max-width: 520px) { .start-steps { grid-template-columns:1fr; } }
+    html.standalone .web-back { display:none; }
+    @media (max-width: 760px) {
+      table.fields, table.fields tbody, table.fields tr, table.fields td { display:block; width:auto !important; }
+      table.fields tr { display:grid; grid-template-columns:1fr auto; gap:2px 10px; padding:10px 0; border-bottom:1px solid var(--line); }
+      table.fields td { border:0; padding:0; }
+      table.fields td:first-child { grid-column:1; } table.fields td:last-child { grid-column:2; grid-row:1; text-align:right; }
+      table.fields td:nth-child(2) { grid-column:1 / -1; }
+      .grid > *, .card { min-width:0; }
+    }
+    .dropzone { position:relative; color:var(--ink); font-weight:400; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+      text-align:center; padding:26px 18px; border:2px dashed #c3cad6; border-radius:14px; background:#fff; cursor:pointer;
+      transition:border-color .15s, background .15s; }
+    .dropzone:hover, .dropzone.over { border-color:var(--accent); background:var(--info-bg); }
+    .dropzone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
+    .dropzone .dz-title { font-family:var(--display); font-weight:700; font-size:18px; }
+    .dropzone .dz-sub { color:var(--muted); font-size:14px; }
+    .dropzone .dz-busy { display:none; font-weight:600; color:var(--accent); }
+    .dropzone.busy .dz-busy { display:block; } .dropzone.busy .dz-title, .dropzone.busy .dz-sub { opacity:.35; }
     .subnav { display:flex; gap:6px; flex-wrap:wrap; margin:-6px 0 22px; }
     .subnav a { padding:7px 12px; border-radius:8px; color:var(--muted); text-decoration:none; font-weight:600; font-size:15px; background:#fff; border:1px solid var(--line); }
     .subnav a.on { color:var(--ink); border-color:var(--accent); }
@@ -99,6 +188,9 @@
 </head>
 <body>
 <header class="top"><div class="wrap">
+  <a class="app-back" href="/eingang" hidden aria-label="Zurück">
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
   <a class="brand" href="{{ '/eingang' if user else '/' }}"><img src="/static/logo-mark.svg" alt="" width="30" height="30"><span class="word">E-Rechnung <span>Agent</span></span></a>
   <nav class="main">
     {% if user %}
@@ -119,6 +211,15 @@
     <a class="btn ghost small" href="/anmelden">Anmelden</a>
   {% endif %}
 </div></header>
+{% if user %}
+<nav class="tabbar" aria-label="App-Navigation">
+  <a href="/eingang" class="{{ 'on' if nav == 'eingang' }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M4 13l2-8h12l2 8v6H4z"/></svg>Eingang</a>
+  {% if can_write %}<a href="/rechnungen/neu" class="{{ 'on' if nav == 'neu' }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h4"/></svg>Schreiben</a>{% endif %}
+  <a href="/ausgang" class="{{ 'on' if nav == 'ausgang' }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>Ausgang</a>
+  <a href="/export" class="{{ 'on' if nav == 'export' }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Export</a>
+  <a href="{{ '/einstellungen' if is_owner else '/konto' }}" class="{{ 'on' if nav in ('einstellungen', 'team', 'tarif', 'konto') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>{{ "Mehr" }}</a>
+</nav>
+{% endif %}
 <main class="{% block main_class %}{% endblock %}">
   {% if flash %}<div class="flash {{ flash[0] }}">{{ flash[1] }}</div>{% endif %}
   {% block content %}{% endblock %}
@@ -127,7 +228,62 @@
   <div>Daten werden auf Servern in Deutschland verarbeitet. Kein Ersatz für steuerliche Beratung.</div>
   <nav class="legal-links"><a href="/app">App installieren</a> · <a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/agb">AGB</a> · <a href="/avv">AV-Vertrag</a></nav>
 </footer>
+{% if user %}<div id="ios-install" class="ios-install" hidden role="dialog" aria-label="App installieren">
+  <button type="button" class="x" aria-label="Schließen">✕</button>
+  <img src="/static/icon-192.png" alt="" width="40" height="40">
+  <div><b>{{ app_name }} als App</b><br>Tippe unten auf <b>Teilen</b>
+    <svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1v11M4 5l4-4 4 4M3 8H1.5v9h13V8H13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    und dann auf <b>„Zum Home-Bildschirm“</b>.</div>
+  <span class="arrow" aria-hidden="true"></span>
+</div>{% endif %}
 <script>
+  (function () {  // Installed app: no browser buttons, so show our own back button below the main sections
+    const standalone = navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
+    if (!standalone) return;
+    document.documentElement.classList.add("standalone");
+    const top = ["/", "/eingang", "/ausgang", "/export", "/rechnungen/neu", "/einstellungen", "/konto", "/anmelden"];
+    const back = document.querySelector(".app-back");
+    if (back && !top.includes(location.pathname)) {
+      back.hidden = false;
+      back.addEventListener("click", (e) => { if (history.length > 1) { e.preventDefault(); history.back(); } });
+    }
+  })();
+  (function () {  // iPhone/iPad Safari has no install button for websites: show how, once
+    const ua = navigator.userAgent;
+    const iOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA|Instagram|FBAN|FBAV/.test(ua);
+    const installed = navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
+    let seen = false;
+    try { seen = localStorage.getItem("ios-install-seen") === "1"; } catch (e) {}
+    const box = document.getElementById("ios-install");
+    if (!box || !iOS || !safari || installed || seen) return;
+    const isPad = /iPad/.test(ua) || navigator.maxTouchPoints > 1 && !/iPhone/.test(ua);
+    if (isPad) box.classList.add("top");
+    setTimeout(() => { box.hidden = false; }, 1500);
+    box.querySelector(".x").addEventListener("click", () => {
+      box.hidden = true;
+      try { localStorage.setItem("ios-install-seen", "1"); } catch (e) {}
+    });
+  })();
+  // Drop zones: drag & drop or tap, then send right away
+  document.addEventListener("change", (e) => {
+    const zone = e.target.closest && e.target.closest(".dropzone");
+    if (!zone || !e.target.files || !e.target.files.length) return;
+    const names = Array.from(e.target.files).map((f) => f.name).join(", ");
+    zone.querySelector(".dz-busy").textContent = (zone.dataset.busy || "Wird hochgeladen …") + " " + names;
+    zone.classList.add("busy");
+    zone.closest("form").requestSubmit();
+  });
+  ["dragenter", "dragover"].forEach((t) => document.addEventListener(t, (e) => {
+    const zone = e.target.closest && e.target.closest(".dropzone"); if (zone) zone.classList.add("over");
+  }));
+  ["dragleave", "drop"].forEach((t) => document.addEventListener(t, (e) => {
+    const zone = e.target.closest && e.target.closest(".dropzone"); if (zone) zone.classList.remove("over");
+  }));
+  document.addEventListener("htmx:afterRequest", (e) => {
+    const zone = e.target.querySelector && e.target.querySelector(".dropzone.busy");
+    if (zone) { zone.classList.remove("busy"); const i = zone.querySelector("input[type=file]"); if (i) i.value = ""; }
+  });
   if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js").catch(() => {}); }
   window.addEventListener("beforeinstallprompt", (e) => {  // Android/desktop Chrome: install on our button
     e.preventDefault(); window.__installPrompt = e; window.dispatchEvent(new Event("installprompt-ready"));

@@ -1,13 +1,27 @@
 {% extends "base.html" %}
+{% block head %}<style>
+  .checkpoints { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin:22px 4px 0; }
+  .checkpoints b { display:block; font-family:var(--display); margin-bottom:2px; }
+  .checkpoints span { color:var(--muted); font-size:15px; }
+  #result:not(:empty) + .checkpoints, #result:not(:empty) ~ .checkpoints { display:none; }
+  @media (max-width: 720px) { .checkpoints { grid-template-columns:1fr; gap:12px; } }
+</style>{% endblock %}
 {% block content %}
 <h1>E-Rechnung prüfen</h1>
 <p class="lead">XRechnung (UBL/CII) oder ZUGFeRD-PDF hochladen: Inhalt lesbar anzeigen, Beträge nachrechnen, gegen die offiziellen Regeln prüfen.</p>
 
-<form class="card drop" hx-post="/pruefen" hx-encoding="multipart/form-data" hx-target="#result" hx-indicator="#spin">
-  <input type="file" name="file" accept=".xml,.pdf" required>
-  <button type="submit">Prüfen</button>
-  <span id="spin" class="htmx-indicator">Wird geprüft …</span>
+<form hx-post="/pruefen" hx-encoding="multipart/form-data" hx-target="#result">
+  <label class="dropzone" data-busy="Wird geprüft:">
+    <input type="file" name="file" accept=".xml,.pdf" required aria-label="E-Rechnung auswählen">
+    <span class="dz-title">E-Rechnung hierher ziehen oder auswählen</span>
+    <span class="dz-sub">XRechnung (.xml) oder ZUGFeRD / Factur-X (.pdf) · ohne Anmeldung, wird nicht gespeichert</span>
+    <span class="dz-busy"></span>
+  </label>
 </form>
-
 <div id="result"></div>
+<div class="checkpoints">
+  <div><b>Lesbar anzeigen</b><span>Die XML-Daten als übersichtliche Rechnung – mit allen Positionen, Beträgen und der Bankverbindung.</span></div>
+  <div><b>Nachrechnen</b><span>Positionen, Netto, Umsatzsteuer und Zahlbetrag werden nachgerechnet, Pflichtangaben geprüft.</span></div>
+  <div><b>Offiziell prüfen</b><span>Mit dem Prüfprogramm der KoSIT gegen die Regeln für XRechnung und EN 16931.</span></div>
+</div>
 {% endblock %}

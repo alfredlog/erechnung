@@ -7,7 +7,7 @@
 <form id="inv" class="card" onsubmit="return false">
   <div class="row spread">
     <h2 style="margin:0">Rechnungssteller</h2>
-    {% if logged_in %}<a class="small" href="/einstellungen">aus den Einstellungen – ändern</a>{% endif %}
+    {% if logged_in %}<a class="small" href="/einstellungen">Dauerhaft ändern: Einstellungen</a>{% endif %}
   </div>
   <div class="grid" style="margin-top:12px" {% if logged_in and seller.name %}hidden{% endif %} id="sellerbox">
     <div class="span2"><label>Firma / Name *</label><input type="text" name="s_name" value="{{ seller.name or '' }}"></div>
@@ -20,7 +20,8 @@
     <div><label>Telefon</label><input type="text" name="s_phone" value="{{ seller.phone or '' }}"></div>
     <div class="span2"><label>E-Mail</label><input type="email" name="s_email" value="{{ seller.email or '' }}"></div>
   </div>
-  {% if logged_in and seller.name %}<p class="muted" style="margin:10px 0 0">{{ seller.name }}, {{ seller.street }}, {{ seller.postal_code }} {{ seller.city }}</p>{% endif %}
+  {% if logged_in and seller.name %}<p class="muted" style="margin:10px 0 0">{{ seller.name }}, {{ seller.street }}, {{ seller.postal_code }} {{ seller.city }}
+    · <button type="button" class="ghost small" onclick="document.getElementById('sellerbox').hidden=false;this.remove()">Nur für diese Rechnung ändern</button></p>{% endif %}
 
   <h2>Rechnungsempfänger</h2>
   <div class="grid">
@@ -35,7 +36,7 @@
   <h2>Rechnung</h2>
   <div class="grid3">
     <div><label>Rechnungsnummer *</label><input type="text" name="number" value="{{ number }}"></div>
-    <div><label>Rechnungsdatum</label><input type="date" name="issue_date"></div>
+    <div><label>Rechnungsdatum</label><input type="date" name="issue_date" id="issue_date"></div>
     <div><label>Leistungsdatum</label><input type="date" name="delivery_date"></div>
     <div><label>Zahlungsziel (Tage)</label><input type="number" name="due_days" value="14" min="0"></div>
     <div><label>IBAN {{ "" }}</label><input type="text" name="iban" value="{{ iban or '' }}"></div>
@@ -153,5 +154,11 @@ async function send(format) {
   } finally { document.getElementById("busy").hidden = true; }
 }
 addLine();
+</script>
+<script>
+  (function () {  // today as invoice date (local time), unless already set
+    const d = document.getElementById("issue_date");
+    if (d && !d.value) { const t = new Date(); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); d.value = t.toISOString().slice(0, 10); }
+  })();
 </script>
 {% endblock %}

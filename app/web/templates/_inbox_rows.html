@@ -1,25 +1,25 @@
 {% macro eur(v) %}{% if v is not none %}{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") }} €{% else %}–{% endif %}{% endmacro %}
 <div id="rows" {% if processing %}hx-get="/eingang?f={{ f }}" hx-trigger="every 3s" hx-swap="outerHTML" hx-select="#rows"{% endif %}>
 {% if rows %}
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Status</th><th>Absender</th><th>Rechnungsnr.</th><th>Datum</th><th class="num">Betrag</th><th>Hinweis</th></tr></thead>
-  <tbody>
+<div class="inv-list" role="list">
+  <div class="inv-row head" aria-hidden="true"><span>Status</span><span>Absender</span><span class="amount">Betrag</span><span>Hinweis</span></div>
   {% for r in rows %}
   {% set st = STATUS[r.status] %}
-  <tr class="link" onclick="location.href='/rechnung/{{ r.id }}'">
-    <td><span class="badge {{ st[0] }}">{{ st[1] }}</span></td>
-    <td>{{ r.partner_name or (r.document.filename if r.document else "–") }}</td>
-    <td>{{ r.number or "–" }}</td>
-    <td>{{ r.issue_date.strftime("%d.%m.%Y") if r.issue_date else "–" }}</td>
-    <td class="num">{{ eur(r.amount_due) }}</td>
-    <td class="small muted">{{ (r.review_reasons or [""])[0][:90] }}{% if (r.review_reasons or [])|length > 1 %} (+{{ r.review_reasons|length - 1 }}){% endif %}</td>
-  </tr>
+  <a class="inv-row" role="listitem" href="/rechnung/{{ r.id }}">
+    <span class="st"><span class="badge {{ st[0] }}">{{ st[1] }}</span></span>
+    <span class="who"><b>{{ r.partner_name or (r.document.filename if r.document else "Unbekannt") }}</b>
+      <small>{{ r.number or "ohne Nummer" }}{% if r.issue_date %} · {{ r.issue_date.strftime("%d.%m.%Y") }}{% endif %}</small></span>
+    <span class="amount">{{ eur(r.amount_due) }}</span>
+    <span class="hint">{{ (r.review_reasons or [""])[0] }}{% if (r.review_reasons or [])|length > 1 %} <span class="more">+{{ r.review_reasons|length - 1 }} weitere</span>{% endif %}</span>
+  </a>
   {% endfor %}
-  </tbody>
-</table>
 </div>
 {% else %}
-<p class="muted" style="margin:0">Hier ist nichts. {% if f == "offen" %}Alle Rechnungen sind erledigt.{% endif %}</p>
+<div class="empty">
+  {% if f == "offen" %}<b>Alles erledigt.</b> Neue Rechnungen erscheinen hier, sobald sie per E-Mail ankommen oder du sie hochlädst.
+  {% elif f == "freigegeben" %}<b>Keine freigegebenen Rechnungen.</b> Freigegebene Rechnungen warten hier auf den nächsten DATEV-Export.
+  {% elif f == "exportiert" %}<b>Noch nichts exportiert.</b> Unter „Export“ erstellst du den Buchungsstapel für deinen Steuerberater.
+  {% else %}<b>Hier ist nichts.</b>{% endif %}
+</div>
 {% endif %}
 </div>

@@ -59,7 +59,7 @@ def test_full_inbox_flow_with_export(seller, buyer):
     page = c.get("/eingang").text
     assert "M-1" in page and "M-2" in page and "Neuer oder nicht eindeutig" in page
 
-    ids = sorted(int(x.split("'")[0]) for x in page.split("/rechnung/")[1:])
+    ids = sorted(int(x.split('"')[0]) for x in page.split("/rechnung/")[1:])
     detail = c.get(f"/rechnung/{ids[0]}").text
     assert "Warum der Agent fragt" in detail and "Freigeben" in detail
     for i in ids:
@@ -82,7 +82,7 @@ def test_full_inbox_flow_with_export(seller, buyer):
 def test_companies_cannot_see_each_other(seller, buyer):
     a, b = new_client("Firma A"), new_client("Firma B")
     a.post("/eingang/upload", files=[("files", ("a.xml", xml_from(seller, buyer, "GEHEIM-1"), "application/xml"))])
-    invoice_id = int(a.get("/eingang").text.split("/rechnung/")[1].split("'")[0])
+    invoice_id = int(a.get("/eingang").text.split("/rechnung/")[1].split('"')[0])
     assert b.get(f"/rechnung/{invoice_id}").status_code == 404
     assert b.get(f"/rechnung/{invoice_id}/datei").status_code == 404
     assert b.post(f"/rechnung/{invoice_id}/freigeben").status_code == 404

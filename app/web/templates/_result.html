@@ -40,7 +40,7 @@
 
     <h2>Prüfergebnis</h2>
     <ul class="findings">
-      {% for f in r.findings %}<li><span class="badge {{ f.severity.value }}">{{ f.severity.value }}</span> {{ f.message }}</li>{% endfor %}
+      {% for f in r.findings %}<li><span class="badge {{ f.severity.value }}">{{ SEVERITY.get(f.severity.value, f.severity.value) }}</span> {{ f.message }}</li>{% endfor %}
       {% if r.kosit %}
         <li><span class="badge {{ 'ok' if r.kosit.acceptable else 'error' }}">KoSIT</span> {{ "Konform zu XRechnung" if r.kosit.acceptable else "Nicht konform" }}</li>
         {% for m in r.kosit.messages %}<li><span class="badge {{ m.level }}">{{ m.code or m.level }}</span> {{ m.text }}</li>{% endfor %}

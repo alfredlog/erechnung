@@ -4,13 +4,13 @@
 {% block title %}Rechnung {{ row.number or row.id }} – {{ app_name }}{% endblock %}
 {% block content %}
 {% set st = STATUS[row.status] %}
-<p class="small"><a href="{{ '/eingang' if row.direction == 'in' else '/ausgang' }}">← zurück</a></p>
+<p class="small web-back"><a href="{{ '/eingang' if row.direction == 'in' else '/ausgang' }}">← zurück</a></p>
 <div class="row spread">
   <h1>{{ "Eingangsrechnung" if row.direction == "in" else "Ausgangsrechnung" }} {{ row.number or "" }}</h1>
   <span class="badge {{ st[0] }}" style="font-size:15px">{{ st[1] }}</span>
 </div>
 <p class="lead">{{ row.partner_name or "Absender unbekannt" }} · {{ eur(row.amount_due) }}{% if row.document %} · {{ row.document.filename }}{% endif %}
-  {% if (row.confidence or {}).get("_method") %}<span class="muted small"> · gelesen über: {{ row.confidence["_method"] }}</span>{% endif %}</p>
+  {% set m = (row.confidence or {}).get("_method", "") %}{% if m %}<span class="muted small"> · {{ "E-Rechnung, exakt gelesen" if m in ("ubl", "cii", "zugferd_pdf", "structured") or "structured" in m else ("Mit KI aus dem Dokument gelesen" if "llm" in m else ("Per Texterkennung aus dem Scan gelesen" if "ocr" in m else ("Keine Rechnung" if m == "not_invoice" else "Automatisch aus dem PDF gelesen"))) }}</span>{% endif %}</p>
 
 {% if row.status == "processing" %}
 <div class="card" hx-get="/rechnung/{{ row.id }}" hx-trigger="every 2s" hx-select="main" hx-target="main" hx-swap="outerHTML">Der Agent prüft die Rechnung …</div>
@@ -30,7 +30,7 @@
     {% set editable = can_write and row.status == "needs_review" and not structured %}
     {% if structured and row.direction == "in" %}<p class="muted small" style="margin-top:0">Strukturierte E-Rechnung: Daten genau so, wie der Absender sie geschickt hat. Bei Fehlern ablehnen und eine Korrektur anfordern.</p>{% endif %}
     <form method="post" action="/rechnung/{{ row.id }}/korrigieren">
-    <table>
+    <table class="fields">
       {% for key, label, value, kind in [
           ("number", "Rechnungsnummer", inv.number, "text"),
           ("issue_date", "Rechnungsdatum", inv.issue_date, "date"),
@@ -141,7 +141,7 @@
       <h2 style="margin-top:0">Prüfergebnis</h2>
       {% if row.kosit_ok is not none %}<p><span class="badge {{ 'ok' if row.kosit_ok else 'error' }}">KoSIT</span> {{ "Konform zu den offiziellen Regeln" if row.kosit_ok else "Nicht konform" }}</p>{% endif %}
       {% if row.findings %}
-      <ul class="findings">{% for f in row.findings %}<li><span class="badge {{ f.severity }}">{{ "Fehler" if f.severity == "error" else "Hinweis" }}</span> {{ f.message }}</li>{% endfor %}</ul>
+      <ul class="findings">{% for f in row.findings %}<li><span class="badge {{ f.severity }}">{{ "Fehler" if f.severity == "error" else "Hinweis" }}</span> {{ finding_text(f.code, f.message) }}</li>{% endfor %}</ul>
       {% else %}<p class="muted" style="margin:0">Beträge und Pflichtangaben stimmen.</p>{% endif %}
     </div>
 

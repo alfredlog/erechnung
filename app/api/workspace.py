@@ -62,7 +62,27 @@ def inbox(request: Request, f: str = "offen", user: User = Depends(require_user)
     template = "_inbox_rows.html" if request.headers.get("HX-Request") else "eingang.html"
     return page(request, template, user, nav="eingang", rows=rows, stats=stats, f=f, STATUS=STATUS,
                 processing=counts.get("processing", 0), mailbox=(org.imap or {}).get("user"),
-                inbound_address=_inbound_address(db, org), usage=billing.usage(db, org))
+                inbound_address=_inbound_address(db, org), usage=billing.usage(db, org),
+                start=_start_steps(db, org, sum(counts.values())) if user.role == "owner" else None)
+
+
+def _start_steps(db: Session, org: Organization, received: int) -> list[dict] | None:
+    """Short start guide for new companies. Disappears once everything is done."""
+    from app.core.tables import Document
+    p = org.profile or {}
+    by_mail = db.scalar(select(func.count()).select_from(Document).where(
+        Document.organization_id == org.id, Document.source == "email")) or 0
+    steps = [
+        {"done": bool(p.get("street") and p.get("postal_code") and p.get("city")), "href": "/einstellungen",
+         "title": "Firmendaten eintragen", "text": "Adresse, USt-IdNr. und IBAN – sie stehen auf deinen Rechnungen."},
+        {"done": by_mail > 0, "href": "/eingangsadresse", "title": "Eingangsadresse nutzen",
+         "text": "Rechnungen per E-Mail an deine eigene Adresse – ohne Passwort."},
+        {"done": received > 0, "href": "#upload", "title": "Erste Rechnung hochladen",
+         "text": "Der Agent liest und prüft sie in Sekunden."},
+        {"done": False, "href": "/app", "title": "App aufs Handy", "text": "Papierrechnungen einfach fotografieren.",
+         "app": True},
+    ]
+    return None if all(s["done"] for s in steps[:3]) else steps
 
 
 @router.post("/eingang/upload")

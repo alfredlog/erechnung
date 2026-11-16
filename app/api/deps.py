@@ -14,6 +14,30 @@ from app.services import accounts
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 templates = Jinja2Templates(directory=WEB_DIR / "templates")
+
+# Check results stored before the messages were German: show the German text by code.
+_OLD_FINDINGS = {
+    "missing-number": "Es fehlt die Rechnungsnummer.", "missing-issue_date": "Es fehlt das Rechnungsdatum.",
+    "missing-currency": "Es fehlt die Währung.", "missing-seller": "Es fehlt der Name des Rechnungsstellers.",
+    "missing-seller-tax-id": "Der Rechnungssteller gibt weder USt-IdNr. noch Steuernummer an "
+                             "(Pflichtangabe nach § 14 UStG).",
+    "line-sum": "Die Summe der Positionen passt nicht zur Rechnung.", "net-total": "Der Nettobetrag passt nicht.",
+    "gross-total": "Der Bruttobetrag ist nicht Netto + Umsatzsteuer.",
+    "vat-sum": "Die Umsatzsteuer der einzelnen Steuersätze passt nicht zur Summe.",
+    "vat-rate": "Ein Steuerbetrag passt nicht zum Steuersatz.", "amount-due": "Der Zahlbetrag passt nicht.",
+    "iban-invalid": "Die IBAN ist ungültig (Prüfziffer stimmt nicht) – bitte beim Lieferanten nachfragen.",
+}
+_ENGLISH = ("Missing ", "Seller has", "Sum of lines", "Net total", "Gross total", "VAT ", "Amount due", "IBAN ")
+
+
+def finding_text(code: str | None, message: str) -> str:
+    if code in _OLD_FINDINGS and message.startswith(_ENGLISH) and "ungültig" not in message:
+        return _OLD_FINDINGS[code]
+    return message
+
+
+templates.env.globals["finding_text"] = finding_text
+templates.env.globals["SEVERITY"] = {"error": "Fehler", "warning": "Hinweis", "info": "Info"}
 COOKIE = "session"
 
 FLASH = {
