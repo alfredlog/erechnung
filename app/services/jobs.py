@@ -51,6 +51,9 @@ def run(db: Session, job: Job) -> None:
                 agent.process(db, row)
         elif job.kind == "poll_mailbox":
             mail.poll(db, job.organization_id)
+        elif job.kind == "send_invoice_mail":
+            from app.services import outbox
+            outbox.send(db, job.payload["mail_id"])
         else:
             raise ValueError(f"unknown job kind {job.kind}")
         job.status = "done"
@@ -66,6 +69,12 @@ def run(db: Session, job: Job) -> None:
                 if row is not None:
                     row.status = "needs_review"
                     row.review_reasons = ["Automatische Verarbeitung fehlgeschlagen – bitte manuell prüfen."]
+            elif job.kind == "send_invoice_mail":
+                from app.core.tables import OutgoingMail
+                from app.services import outbox
+                m = db.get(OutgoingMail, job.payload.get("mail_id"))
+                if m is not None and m.status != "sent":
+                    outbox.mark_failed(db, m, m.error or "Versand nach mehreren Versuchen fehlgeschlagen.")
         else:
             job.status = "queued"
             job.run_after = datetime.now(UTC) + timedelta(minutes=2 ** job.attempts)  # back off

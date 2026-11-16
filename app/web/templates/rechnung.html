@@ -94,6 +94,40 @@
       </div>
     </div>
 
+    {% if send %}
+    <div class="card" id="versand">
+      <h2 style="margin-top:0">Versand</h2>
+      {% for m in send.mails %}
+      <p class="small" style="margin:0 0 8px">
+        <span class="badge {{ {'sent': 'ok', 'queued': 'info', 'failed': 'error'}[m.status] }}">{{ {'sent': 'Versendet', 'queued': 'Wird gesendet', 'failed': 'Fehlgeschlagen'}[m.status] }}</span>
+        an <b>{{ m.recipient }}</b> · {{ (m.sent_at or m.created_at).strftime("%d.%m.%Y %H:%M") }} · {{ "ZUGFeRD-PDF" if m.attachment == "pdf" else "XRechnung" }}
+        {% if m.error %}<br><span class="muted">{{ m.error }}</span>{% endif %}
+      </p>
+      {% endfor %}
+      {% if not send.enabled %}
+        <p class="muted small" style="margin:0">Lade die Rechnung herunter („Original öffnen“) und schicke sie aus deinem Postfach.</p>
+      {% else %}
+      {% if send.error %}<div class="flash error">{{ send.error }}</div>{% endif %}
+      <details {% if not send.mails or send.error %}open{% endif %}>
+        <summary style="cursor:pointer;font-weight:700">{{ "Erneut per E-Mail senden" if send.mails else "Per E-Mail senden" }}</summary>
+        <form method="post" action="/rechnung/{{ row.id }}/senden" style="margin-top:12px">
+          <label>An</label><input type="email" name="to" value="{{ send.defaults.to }}" required placeholder="buchhaltung@kunde.de">
+          <label style="margin-top:10px">Betreff</label><input type="text" name="subject" value="{{ send.defaults.subject }}" required>
+          <label style="margin-top:10px">Nachricht</label><textarea name="body" rows="8" required>{{ send.defaults.body }}</textarea>
+          <label style="margin-top:10px">Anhang</label>
+          <select name="attachment">
+            <option value="pdf">ZUGFeRD-PDF (für die meisten Kunden)</option>
+            <option value="xml">XRechnung-XML (z. B. für Behörden)</option>
+          </select>
+          {% if send.own %}<label style="display:flex;gap:8px;font-weight:500;color:var(--ink);margin-top:10px"><input type="checkbox" name="copy_to_me" checked> Kopie an mich ({{ send.own }})</label>{% endif %}
+          <button style="margin-top:12px">Senden</button>
+          <p class="muted small" style="margin:8px 0 0">Absender: „{{ user.organization.name }} via {{ app_name }}“. Antworten deines Kunden gehen direkt an {{ send.own or "dich" }}.</p>
+        </form>
+      </details>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <div class="card">
       <h2 style="margin-top:0">Prüfergebnis</h2>
       {% if row.kosit_ok is not none %}<p><span class="badge {{ 'ok' if row.kosit_ok else 'error' }}">KoSIT</span> {{ "Konform zu den offiziellen Regeln" if row.kosit_ok else "Nicht konform" }}</p>{% endif %}
@@ -109,7 +143,9 @@
         <tr><td class="muted" style="white-space:nowrap">{{ h.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
           <td>{{ {"received": "Empfangen", "processed": "Vom Agenten geprüft", "approved": "Freigegeben", "rejected": "Abgelehnt",
                   "corrected": "Korrigiert", "invoice_created": "Erstellt", "supplier_iban_confirmed": "IBAN bestätigt",
-                  "exported": "Exportiert"}.get(h.action, h.action) }}
+                  "exported": "Exportiert", "mail_queued": "Versand angestoßen", "invoice_sent": "Per E-Mail versendet",
+                  "mail_failed": "Versand fehlgeschlagen"}.get(h.action, h.action) }}
+            {% if h.action in ("invoice_sent", "mail_queued", "mail_failed") %}<span class="muted">an {{ h.detail.get("to") }}</span>{% endif %}
             {% if h.action == "approved" %}<span class="muted">({{ "automatisch" if h.detail.get("by") == "agent" else "manuell" }})</span>{% endif %}
             {% if h.action == "corrected" %}<span class="muted">{{ h.detail.get("field") }}: {{ h.detail.get("old") or "–" }} → {{ h.detail.get("new") or "–" }}</span>{% endif %}
             {% if h.action == "rejected" and h.detail.get("reason") %}<span class="muted">– {{ h.detail.get("reason") }}</span>{% endif %}

@@ -21,7 +21,7 @@ from app.core.security import encrypt
 from app.core.tables import AuditLog, Export, Invoice, Organization, User
 from app.domain.export.datev import DatevSettings
 from app.domain.generate.draft import DraftParty, InvoiceDraft
-from app.services import agent, exports, inbound, invoicing, jobs, mail, storage
+from app.services import agent, exports, inbound, invoicing, jobs, mail, outbox, storage
 
 router = APIRouter()
 
@@ -80,9 +80,29 @@ def detail(request: Request, invoice_id: int, user: User = Depends(require_user)
     row = _invoice(db, user, invoice_id)
     history = list(db.scalars(select(AuditLog).where(AuditLog.invoice_id == row.id).order_by(AuditLog.id)))
     inv = agent.Invoice.model_validate(row.data) if row.data else None
+    send = None
+    if row.direction == "out":
+        org = _org(db, user)
+        send = {"enabled": outbox.enabled(), "defaults": outbox.defaults(row, org),
+                "mails": outbox.for_invoice(db, row.id), "own": outbox.company_email(org, user),
+                "error": request.query_params.get("send_error", "")}
     return page(request, "rechnung.html", user, nav="eingang" if row.direction == "in" else "ausgang", row=row,
                 inv=inv, history=history, STATUS=STATUS, labels=agent.FIELD_LABELS,
-                structured=agent.is_structured(row), iban_changed=agent.iban_changed(row))
+                structured=agent.is_structured(row), iban_changed=agent.iban_changed(row), send=send)
+
+
+@router.post("/rechnung/{invoice_id}/senden")
+def send_invoice(invoice_id: int, to: str = Form(""), subject: str = Form(""), body: str = Form(""),
+                 attachment: str = Form("pdf"), copy_to_me: str = Form(""), user: User = Depends(require_user),
+                 db: Session = Depends(get_db)):
+    from urllib.parse import quote
+    row = _invoice(db, user, invoice_id)
+    try:
+        outbox.queue(db, _org(db, user), row, user, to, subject, body, attachment, copy_to_me == "on")
+    except outbox.SendError as exc:
+        return RedirectResponse(f"/rechnung/{row.id}?send_error={quote(str(exc))}#versand", 303)
+    jobs.run_pending_inline(db)
+    return RedirectResponse(f"/rechnung/{row.id}?m=mail_queued#versand", 303)
 
 
 @router.get("/rechnung/{invoice_id}/datei")

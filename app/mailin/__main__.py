@@ -19,7 +19,7 @@ def main() -> None:
     tls = tls_context(settings.inbound_domain or "localhost", settings.data_dir / "mailin-tls")
     controller = make_controller(tls=tls)
     controller.start()
-    log.info("receiving mail for *@%s on port %s", settings.inbound_domain, settings.smtp_port)
+    log.info("receiving mail for *@%s on port %s", settings.inbound_domain, settings.mailin_port)
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())

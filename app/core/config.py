@@ -33,9 +33,21 @@ class Settings:
     llm_model: str = field(default_factory=lambda: _env("LLM_MODEL", "mistral-small-latest"))
     # Domain for the customers' receiving addresses (MX record → this server). Empty = feature off.
     inbound_domain: str = field(default_factory=lambda: _env("INBOUND_DOMAIN").strip().lower())
-    smtp_port: int = field(default_factory=lambda: int(_env("SMTP_PORT", "2525")))
+    mailin_port: int = field(default_factory=lambda: int(_env("MAILIN_PORT", "2525")))
     max_mail_mb: int = field(default_factory=lambda: int(_env("MAX_MAIL_MB", "25")))
+    # Sending invoices by e-mail (e.g. IONOS: smtp.ionos.de, 587, starttls). Empty host = feature off.
+    smtp_host: str = field(default_factory=lambda: _env("SMTP_HOST"))
+    smtp_out_port: int = field(default_factory=lambda: int(_env("SMTP_OUT_PORT", "587")))
+    smtp_security: str = field(default_factory=lambda: _env("SMTP_SECURITY", "starttls"))  # starttls/ssl/none
+    smtp_user: str = field(default_factory=lambda: _env("SMTP_USER"))
+    smtp_password: str = field(default_factory=lambda: _env("SMTP_PASSWORD"))
+    mail_from: str = field(default_factory=lambda: _env("MAIL_FROM"))
+    max_mails_per_day: int = field(default_factory=lambda: int(_env("MAX_MAILS_PER_DAY", "50")))
     imap_poll_minutes: int = field(default_factory=lambda: int(_env("IMAP_POLL_MINUTES", "10")))
+
+    @property
+    def sending_enabled(self) -> bool:
+        return bool(self.smtp_host and self.mail_from)
 
     @property
     def llm_enabled(self) -> bool:

@@ -125,4 +125,4 @@ class _Controller(Controller):
 
 
 def make_controller(host: str = "0.0.0.0", port: int | None = None, tls: ssl.SSLContext | None = None):
-    return _Controller(InboundHandler(), tls, hostname=host, port=port or settings.smtp_port)
+    return _Controller(InboundHandler(), tls, hostname=host, port=port or settings.mailin_port)

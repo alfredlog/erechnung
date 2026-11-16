@@ -195,3 +195,23 @@ class InboundNotice(Base):
     subject: Mapped[str] = mapped_column(String(500), default="")
     body: Mapped[str] = mapped_column(Text, default="")
     links: Mapped[list] = mapped_column(JSON, default=list)
+
+
+class OutgoingMail(Base):
+    """An invoice sent by e-mail from the app (proof of sending, retries, errors)."""
+    __tablename__ = "outgoing_mails"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    invoice_id: Mapped[int] = mapped_column(ForeignKey("invoices.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    recipient: Mapped[str] = mapped_column(String(320))
+    copy_to: Mapped[str] = mapped_column(String(320), default="")   # the company itself, as a copy
+    reply_to: Mapped[str] = mapped_column(String(320), default="")
+    subject: Mapped[str] = mapped_column(String(300))
+    body: Mapped[str] = mapped_column(Text)
+    attachment: Mapped[str] = mapped_column(String(10), default="pdf")  # pdf (ZUGFeRD) / xml (XRechnung)
+    status: Mapped[str] = mapped_column(String(10), default="queued")   # queued / sent / failed
+    error: Mapped[str] = mapped_column(Text, default="")
+    message_id: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

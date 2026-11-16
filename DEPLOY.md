@@ -54,7 +54,24 @@ E-Mail"). The `mailin` container receives these mails; it never sends mail and r
 4. `docker compose up -d --build`, then test from outside:
    `swaks --to <address> --server eingang.erechnungagent.de --attach @rechnung.pdf` or simply send a mail.
 
-## 5. Backups (daily)
+## 5. Sending invoices by e-mail
+
+Mails go out through the IONOS mailbox `rechnungen@erechnungagent.de` (never directly from the VPS,
+whose IP would land in spam). In `.env`:
+
+```
+SMTP_HOST=smtp.ionos.de
+SMTP_OUT_PORT=587
+SMTP_SECURITY=starttls
+SMTP_USER=rechnungen@erechnungagent.de
+SMTP_PASSWORD=<mailbox password>
+MAIL_FROM=rechnungen@erechnungagent.de
+```
+
+Then `docker compose up -d api worker`. Sender shown to customers: "<Firma> via E-Rechnung Agent",
+Reply-To = the company's own e-mail. Max. `MAX_MAILS_PER_DAY` mails per company and day.
+
+## 6. Backups (daily)
 
 ```bash
 mkdir -p ~/backups/erechnung
@@ -65,13 +82,13 @@ crontab -e
 
 Copy the backups regularly to a second place (e.g. netcup storage or your laptop).
 
-## 6. Update
+## 7. Update
 
 ```bash
 cd ~/apps/erechnung && git pull && docker compose up -d --build
 ```
 
-## 7. PDF Libre tools
+## 8. PDF Libre tools
 
 PDF Libre's `.env`: `ERECHNUNG_API_URL=http://127.0.0.1:8100`. The tools "XRechnung anzeigen"
 and "E-Rechnung prüfen" call `POST /api/v1/render`.
