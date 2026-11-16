@@ -158,7 +158,8 @@
         <li>{{ x.inbound }} Eingangsrechnungen / Monat</li>
         <li>{{ "Unbegrenzt Rechnungen schreiben" if x.outbound is none else x.outbound ~ " Rechnungen schreiben / Monat" }}</li>
         <li class="{{ '' if x.send_mail else 'no' }}">Rechnungen per E-Mail senden</li>
-        <li class="{{ '' if x.ai else 'no' }}">KI liest PDFs und Scans</li>
+        <li>E-Rechnungen (XRechnung, ZUGFeRD): exakt gelesen und geprüft</li>
+        <li>{{ "PDFs und Scans: KI-Erkennung (weniger Nacharbeit)" if x.ai else "PDFs und Scans: automatische Erkennung" }}</li>
         <li>{{ x.users }} Nutzer</li>
       </ul>
     </div>
