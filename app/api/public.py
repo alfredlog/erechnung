@@ -7,7 +7,7 @@ from __future__ import annotations
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from app.api.check import CheckResult, run_check
 from app.api.deps import optional_user, page, read_upload
@@ -21,7 +21,14 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request, user=Depends(optional_user)):
-    return page(request, "index.html", user, nav="pruefen")
+    if user:
+        return RedirectResponse("/eingang", status_code=303)
+    return page(request, "landing.html", user, nav="start")
+
+
+@router.get("/pruefen", response_class=HTMLResponse)
+def check_form(request: Request, user=Depends(optional_user)):
+    return page(request, "pruefen.html", user, nav="pruefen")
 
 
 @router.post("/api/v1/check", response_model=CheckResult)

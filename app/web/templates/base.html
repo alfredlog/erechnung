@@ -63,6 +63,7 @@
     .htmx-indicator { display:none; } .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display:inline; }
     footer.site { max-width:1100px; margin:0 auto; padding:24px 16px 40px; color:var(--muted); font-size:14px; }
   </style>
+  {% block head %}{% endblock %}
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -75,7 +76,7 @@
       <a href="/export" class="{{ 'on' if nav == 'export' }}">Export</a>
       <a href="/einstellungen" class="{{ 'on' if nav == 'einstellungen' }}">Einstellungen</a>
     {% else %}
-      <a href="/" class="{{ 'on' if nav == 'pruefen' }}">Prüfen</a>
+      <a href="/pruefen" class="{{ 'on' if nav == 'pruefen' }}">Prüfen</a>
       <a href="/erstellen" class="{{ 'on' if nav == 'erstellen' }}">Erstellen</a>
     {% endif %}
   </nav>

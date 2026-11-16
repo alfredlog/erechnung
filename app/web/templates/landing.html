@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }} – E-Rechnungen automatisch empfangen, prüfen und an DATEV übergeben{% endblock %}
+{% block description %}E-Rechnung Agent liest XRechnung, ZUGFeRD, PDF und Scans aus, prüft sie gegen die offiziellen Regeln, erkennt Duplikate und geänderte IBANs und übergibt alles an DATEV. Server in Deutschland.{% endblock %}
+{% block head %}
+<style>
+  .timeline .card, .steps .card, .features .card, .split .card { margin-top:0; }
+  .hero { display:grid; grid-template-columns: 1.1fr 1fr; gap:40px; align-items:center; padding:28px 0 12px; }
+  .hero h1 { font-size:44px; line-height:1.1; letter-spacing:-.025em; margin:0 0 16px; }
+  .hero h1 em { font-style:normal; color:var(--accent); }
+  .hero p.lead { font-size:19px; margin-bottom:26px; }
+  .cta { display:flex; gap:12px; flex-wrap:wrap; }
+  .cta .btn { padding:13px 22px; font-size:17px; }
+  .trust { display:flex; gap:18px; flex-wrap:wrap; margin-top:22px; color:var(--muted); font-size:14px; }
+  .trust span::before { content:"✓ "; color:var(--ok); font-weight:800; }
+  .mock { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 18px 40px -24px rgba(22,32,46,.35); }
+  .mock .head { display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-bottom:10px; font-weight:600; }
+  .mock .item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 4px; border-top:1px solid var(--line); }
+  .mock .item b { display:block; font-size:15px; } .mock .item small { color:var(--muted); font-size:13px; }
+  .mock .amt { font-variant-numeric:tabular-nums; font-weight:700; text-align:right; white-space:nowrap; }
+  .mock .amt .badge { display:block; margin-top:4px; font-size:12px; }
+  section.block { margin-top:72px; }
+  section.block > h2 { font-size:30px; letter-spacing:-.02em; margin:0 0 8px; }
+  section.block > p.lead { max-width:720px; }
+  .timeline { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .timeline .card b.year { font-size:28px; color:var(--accent); display:block; }
+  .timeline .card.now { outline:2px solid var(--accent); }
+  .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; counter-reset:step; }
+  .steps .card { position:relative; padding-top:46px; }
+  .steps .card::before { counter-increment:step; content:counter(step); position:absolute; top:16px; left:20px;
+     width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; font-weight:800; font-size:14px;
+     display:flex; align-items:center; justify-content:center; }
+  .steps h3, .features h3 { margin:0 0 6px; font-size:17px; }
+  .steps p, .features p { margin:0; color:var(--muted); font-size:15px; }
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  ul.checks { list-style:none; padding:0; margin:0; }
+  ul.checks li { padding:10px 0 10px 34px; position:relative; border-bottom:1px solid var(--line); }
+  ul.checks li:last-child { border-bottom:0; }
+  ul.checks li::before { content:"✓"; position:absolute; left:0; top:10px; width:22px; height:22px; border-radius:6px;
+     background:var(--ok-bg); color:var(--ok); font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  ul.checks.ask li::before { content:"?"; background:var(--warn-bg); color:var(--warn); }
+  .features { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .features .ico { font-size:22px; margin-bottom:8px; display:block; }
+  details.faq { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  details.faq + details.faq { margin-top:10px; }
+  details.faq summary { font-weight:700; cursor:pointer; }
+  details.faq p { color:var(--muted); margin:10px 0 2px; }
+  .final { margin-top:72px; background:var(--ink); color:#fff; border-radius:18px; padding:40px; text-align:center; }
+  .final h2 { color:#fff; font-size:28px; margin:0 0 8px; }
+  .final p { color:#c9d1de; margin:0 0 22px; }
+  .final .btn.ghost { background:rgba(255,255,255,.12); color:#fff; }
+  @media (max-width: 900px) {
+    .hero, .split { grid-template-columns:1fr; } .hero h1 { font-size:34px; }
+    .steps, .features { grid-template-columns:1fr 1fr; } .timeline { grid-template-columns:1fr; }
+  }
+  @media (max-width: 560px) { .steps, .features { grid-template-columns:1fr; } .final { padding:28px 18px; } }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <div>
+    <h1>Eingangsrechnungen, die sich <em>selbst</em> bearbeiten.</h1>
+    <p class="lead">E-Rechnung Agent nimmt deine Rechnungen an – XRechnung, ZUGFeRD, PDF oder Scan –, liest sie aus, prüft sie und bereitet sie für DATEV vor. Du schaust nur noch auf die Fälle, bei denen wirklich etwas nicht stimmt.</p>
+    <div class="cta">
+      <a class="btn" href="/registrieren">Kostenlos starten</a>
+      <a class="btn ghost" href="/pruefen">E-Rechnung prüfen – ohne Anmeldung</a>
+    </div>
+    <div class="trust"><span>Server in Deutschland</span><span>Offizieller KoSIT-Prüfer</span><span>GoBD-gerechte Ablage</span></div>
+  </div>
+  <div class="mock" aria-hidden="true">
+    <div class="head"><span>Eingang</span><span>heute</span></div>
+    <div class="item"><div><b>Bürobedarf Schmitt GmbH</b><small>RE-2026-0412 · XRechnung</small></div>
+      <div class="amt">238,00 €<span class="badge ok">Automatisch freigegeben</span></div></div>
+    <div class="item"><div><b>Hosting Nord KG</b><small>HN-77810 · ZUGFeRD</small></div>
+      <div class="amt">59,50 €<span class="badge ok">Automatisch freigegeben</span></div></div>
+    <div class="item"><div><b>Malerbetrieb Kraus</b><small>2026-118 · PDF-Scan</small></div>
+      <div class="amt">1.785,00 €<span class="badge warning">Bitte prüfen: neue IBAN</span></div></div>
+    <div class="item"><div><b>Bürobedarf Schmitt GmbH</b><small>RE-2026-0412 · PDF</small></div>
+      <div class="amt">238,00 €<span class="badge error">Duplikat erkannt</span></div></div>
+  </div>
+</div>
+
+<section class="block">
+  <h2>Die E-Rechnungspflicht kommt Schritt für Schritt</h2>
+  <p class="lead">Seit 2025 gilt sie für alle Unternehmen in Deutschland beim Empfang. Beim Versand kommt sie in zwei Stufen.</p>
+  <div class="timeline">
+    <div class="card now"><b class="year">2025</b><b>Empfangen</b><p class="muted small">Alle Unternehmen müssen E-Rechnungen annehmen und lesen können. Eine XML-Datei ist für Menschen ohne Software kaum lesbar.</p></div>
+    <div class="card"><b class="year">2027</b><b>Versenden ab 800.000 € Umsatz</b><p class="muted small">Unternehmen mit mehr als 800.000 € Vorjahresumsatz müssen an andere Unternehmen E-Rechnungen schicken.</p></div>
+    <div class="card"><b class="year">2028</b><b>Versenden für alle</b><p class="muted small">Dann gilt die Pflicht für alle Unternehmen. PDF per E-Mail reicht im B2B-Geschäft nicht mehr.</p></div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>So funktioniert es</h2>
+  <p class="lead">Einmal einrichten, danach läuft der Eingang im Hintergrund.</p>
+  <div class="steps">
+    <div class="card"><h3>Empfangen</h3><p>Du verbindest ein Rechnungs-Postfach (z. B. rechnungen@deinefirma.de) oder lädst Dateien hoch. Der Agent holt neue Anhänge alle paar Minuten ab.</p></div>
+    <div class="card"><h3>Auslesen</h3><p>XRechnung und ZUGFeRD werden exakt gelesen. Bei normalen PDFs und Scans erkennt der Agent den Text und findet Rechnungsnummer, Datum, Beträge und IBAN.</p></div>
+    <div class="card"><h3>Prüfen</h3><p>Pflichtangaben, Rechenwege und Steuersätze werden nachgerechnet, E-Rechnungen zusätzlich mit dem offiziellen Prüfprogramm der KoSIT geprüft.</p></div>
+    <div class="card"><h3>Freigeben & exportieren</h3><p>Sichere Rechnungen gibt der Agent selbst frei, unsichere legt er dir vor. Am Ende ein Klick: DATEV-Buchungsstapel mit Belegen für deinen Steuerberater.</p></div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Ein Agent, der lieber einmal mehr fragt</h2>
+  <p class="lead">Bei Rechnungen geht es um Geld. Deshalb gibt der Agent nur frei, was er sicher belegen kann – und zahlt niemals selbst.</p>
+  <div class="split">
+    <div class="card">
+      <h3 style="margin-top:0">Automatisch freigegeben wird nur, wenn …</h3>
+      <ul class="checks">
+        <li>jeder erkannte Wert wörtlich in der Rechnung steht</li>
+        <li>alle Beträge und Steuern aufgehen</li>
+        <li>der Lieferant schon einmal von dir bestätigt wurde</li>
+        <li>die Bankverbindung dieselbe ist wie bisher</li>
+        <li>die Rechnung nicht schon einmal eingegangen ist</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Der Agent fragt dich, wenn …</h3>
+      <ul class="checks ask">
+        <li>ein Lieferant plötzlich eine neue IBAN angibt – ein typisches Zeichen für Betrug</li>
+        <li>dieselbe Rechnung doppelt kommt, z. B. als PDF und als XRechnung</li>
+        <li>ein Betrag auf einem Scan nicht eindeutig lesbar ist</li>
+        <li>ein neuer Lieferant oder eine Gutschrift dabei ist</li>
+        <li>Pflichtangaben fehlen oder die E-Rechnung ungültig ist</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Alles, was du für E-Rechnungen brauchst</h2>
+  <p class="lead">Ohne Installation, im Browser, auch auf dem Handy.</p>
+  <div class="features">
+    <div class="card"><span class="ico">📥</span><h3>Rechnungseingang</h3><p>Alle Eingangsrechnungen an einem Ort, mit Status, Prüfergebnis und lesbarer Ansicht jeder XRechnung.</p></div>
+    <div class="card"><span class="ico">✍️</span><h3>Rechnungen schreiben</h3><p>Ausgangsrechnungen als XRechnung oder ZUGFeRD-PDF erstellen – mit fortlaufender Nummer und deinen Firmendaten.</p></div>
+    <div class="card"><span class="ico">📊</span><h3>DATEV-Export</h3><p>Buchungsstapel im DATEV-Format mit Kreditoren, Debitoren und Belegen – direkt für deinen Steuerberater.</p></div>
+    <div class="card"><span class="ico">🔍</span><h3>Kostenlos prüfen</h3><p>Eine E-Rechnung bekommen? Hochladen, lesbar ansehen und prüfen lassen – ohne Konto.</p></div>
+    <div class="card"><span class="ico">🗄️</span><h3>Sichere Ablage</h3><p>Jedes Original wird unverändert gespeichert, jede Änderung protokolliert – passend zu den GoBD.</p></div>
+    <div class="card"><span class="ico">🇩🇪</span><h3>Daten in Deutschland</h3><p>Verarbeitung und Speicherung auf Servern in Deutschland, verschlüsselte Zugangsdaten.</p></div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Häufige Fragen</h2>
+  <details class="faq"><summary>Was ist eine E-Rechnung genau?</summary>
+    <p>Eine Rechnung in einem strukturierten Format nach der europäischen Norm EN 16931 – in Deutschland meist XRechnung (reine XML-Datei) oder ZUGFeRD (PDF mit eingebetteter XML). Ein normales PDF oder ein Scan ist keine E-Rechnung.</p></details>
+  <details class="faq"><summary>Funktioniert der Agent auch mit normalen PDFs und Papierrechnungen?</summary>
+    <p>Ja. Viele Lieferanten schicken noch PDFs. Der Agent liest auch diese und Scans aus. Weil hier Fehler beim Lesen möglich sind, legt er sie dir eher zur Kontrolle vor als echte E-Rechnungen.</p></details>
+  <details class="faq"><summary>Ich bin Kleinunternehmer. Betrifft mich das?</summary>
+    <p>Empfangen musst du E-Rechnungen auch als Kleinunternehmer können. Selbst versenden musst du sie nicht – du kannst es aber, der Agent setzt dann den Hinweis nach § 19 UStG automatisch.</p></details>
+  <details class="faq"><summary>Ersetzt das meinen Steuerberater?</summary>
+    <p>Nein. Der Agent nimmt dir das Sammeln, Lesen und Prüfen ab und übergibt alles sauber im DATEV-Format. Die steuerliche Beratung bleibt bei deinem Steuerberater.</p></details>
+  <details class="faq"><summary>Wo liegen meine Daten?</summary>
+    <p>Auf Servern in Deutschland. Passwörter werden nur verschlüsselt gespeichert, jede Firma sieht nur ihre eigenen Rechnungen.</p></details>
+  <details class="faq"><summary>Was kostet es?</summary>
+    <p>In der Startphase kannst du E-Rechnung Agent kostenlos nutzen. Das Prüfen einzelner E-Rechnungen bleibt immer kostenlos.</p></details>
+</section>
+
+<div class="final">
+  <h2>Bereit für die E-Rechnung?</h2>
+  <p>In wenigen Minuten eingerichtet. Keine Installation, keine Kreditkarte.</p>
+  <div class="cta" style="justify-content:center">
+    <a class="btn" href="/registrieren">Kostenlos starten</a>
+    <a class="btn ghost" href="/pruefen">Erst eine Rechnung prüfen</a>
+  </div>
+</div>
+{% endblock %}

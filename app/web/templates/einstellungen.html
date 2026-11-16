@@ -36,13 +36,95 @@
     <h2 style="margin-top:0">Rechnungs-Postfach (IMAP)</h2>
     <p class="muted small">Ein E-Mail-Postfach, an das Lieferanten ihre Rechnungen schicken (z. B. rechnungen@deinefirma.de). Der Agent holt die Anhänge alle paar Minuten ab.</p>
     <div class="grid">
-      <div><label>Server</label><input type="text" name="imap_host" value="{{ imap.host or '' }}" placeholder="imap.ionos.de"></div>
-      <div><label>Port</label><input type="text" name="imap_port" value="{{ imap.port or '993' }}"></div>
-      <div><label>Benutzer</label><input type="text" name="imap_user" value="{{ imap.user or '' }}"></div>
+      <div><label>E-Mail-Adresse des Postfachs</label><input type="email" id="imap_user" name="imap_user" value="{{ imap.user or '' }}" placeholder="rechnungen@deinefirma.de" autocomplete="off"></div>
+      <div><label>E-Mail-Anbieter</label>
+        <select id="imap_provider">
+          <option value="">– bitte wählen –</option>
+          <option value="ionos">IONOS (1&amp;1)</option>
+          <option value="strato">STRATO</option>
+          <option value="gmx">GMX</option>
+          <option value="webde">WEB.DE</option>
+          <option value="tonline">Telekom (T-Online)</option>
+          <option value="gmail">Gmail / Google Workspace</option>
+          <option value="icloud">iCloud</option>
+          <option value="posteo">Posteo</option>
+          <option value="mailboxorg">mailbox.org</option>
+          <option value="freenet">freenet</option>
+          <option value="microsoft">Outlook / Microsoft 365</option>
+          <option value="other">Anderer Anbieter</option>
+        </select></div>
       <div><label>Passwort {% if has_imap_password %}<span class="muted">(gespeichert, leer lassen = behalten)</span>{% endif %}</label><input type="password" name="imap_password" autocomplete="new-password"></div>
-      <div><label>Ordner</label><input type="text" name="imap_folder" value="{{ imap.folder or 'INBOX' }}"></div>
     </div>
+    <p id="imap_hint" class="muted small" hidden></p>
+    <details id="imap_details" {% if imap.host and imap.port and imap.port|string != '993' %}open{% endif %}>
+      <summary class="small">Server-Einstellungen (werden automatisch ausgefüllt)</summary>
+      <div class="grid" style="margin-top:8px">
+        <div><label>IMAP-Server</label><input type="text" id="imap_host" name="imap_host" value="{{ imap.host or '' }}" placeholder="imap.ionos.de"></div>
+        <div><label>Port</label><input type="text" id="imap_port" name="imap_port" value="{{ imap.port or '993' }}"></div>
+        <div><label>Ordner</label><input type="text" name="imap_folder" value="{{ imap.folder or 'INBOX' }}"></div>
+      </div>
+    </details>
   </div>
+  <script>
+  (function () {
+    // IMAP-Server bekannter Anbieter. Port ist überall 993 (SSL/TLS).
+    const PROVIDERS = {
+      ionos:      { host: "imap.ionos.de" },
+      strato:     { host: "imap.strato.de" },
+      gmx:        { host: "imap.gmx.net", hint: "Bei GMX muss IMAP einmalig aktiviert werden: Einstellungen → POP3/IMAP Abruf." },
+      webde:      { host: "imap.web.de", hint: "Bei WEB.DE muss IMAP einmalig aktiviert werden: Einstellungen → POP3/IMAP Abruf." },
+      tonline:    { host: "secureimap.t-online.de", hint: "Bei T-Online brauchst du ein eigenes E-Mail-Passwort (nicht das Kundencenter-Passwort)." },
+      gmail:      { host: "imap.gmail.com", hint: "Bei Gmail brauchst du ein App-Passwort: Google-Konto → Sicherheit → 2-Faktor aktivieren → App-Passwörter." },
+      icloud:     { host: "imap.mail.me.com", hint: "Bei iCloud brauchst du ein app-spezifisches Passwort: account.apple.com → Anmelden und Sicherheit → App-spezifische Passwörter." },
+      posteo:     { host: "posteo.de" },
+      mailboxorg: { host: "imap.mailbox.org" },
+      freenet:    { host: "mx.freenet.de" },
+      microsoft:  { host: "outlook.office365.com", hint: "Achtung: Microsoft erlaubt die Anmeldung per Passwort oft nicht mehr. Am einfachsten ein Postfach bei einem anderen Anbieter nutzen oder eine Weiterleitung einrichten." },
+      other:      { host: "", hint: "Den IMAP-Server findest du in der Hilfe deines Anbieters (meist imap.deinanbieter.de). Unten bei Server-Einstellungen eintragen." },
+    };
+    const DOMAINS = {
+      "gmx.de": "gmx", "gmx.net": "gmx", "gmx.at": "gmx", "gmx.ch": "gmx",
+      "web.de": "webde", "t-online.de": "tonline", "magenta.de": "tonline",
+      "gmail.com": "gmail", "googlemail.com": "gmail",
+      "icloud.com": "icloud", "me.com": "icloud", "mac.com": "icloud",
+      "posteo.de": "posteo", "posteo.net": "posteo", "mailbox.org": "mailboxorg",
+      "freenet.de": "freenet", "online.de": "ionos", "onlinehome.de": "ionos",
+      "outlook.com": "microsoft", "outlook.de": "microsoft", "hotmail.com": "microsoft",
+      "hotmail.de": "microsoft", "live.com": "microsoft", "live.de": "microsoft",
+    };
+    const user = document.getElementById("imap_user");
+    const sel = document.getElementById("imap_provider");
+    const host = document.getElementById("imap_host");
+    const port = document.getElementById("imap_port");
+    const hint = document.getElementById("imap_hint");
+    const details = document.getElementById("imap_details");
+
+    function showHint(text) { hint.textContent = text || ""; hint.hidden = !text; }
+    function apply(key) {
+      const p = PROVIDERS[key];
+      if (!p) { showHint(""); return; }
+      if (p.host) host.value = p.host;
+      port.value = "993";
+      if (key === "other") { details.open = true; host.focus(); }
+      showHint(p.hint);
+    }
+    // Beim Laden: passenden Anbieter zum gespeicherten Server anzeigen.
+    for (const [k, p] of Object.entries(PROVIDERS)) {
+      if (p.host && p.host === host.value) { sel.value = k; showHint(p.hint); }
+    }
+    if (host.value && !sel.value) sel.value = "other";
+
+    sel.addEventListener("change", () => apply(sel.value));
+    user.addEventListener("change", () => {
+      const domain = (user.value.split("@")[1] || "").trim().toLowerCase();
+      const key = DOMAINS[domain];
+      if (key) { sel.value = key; apply(key); }
+      else if (domain && !sel.value) {
+        showHint("Eigene Domain: Wähle den Anbieter, bei dem die Domain liegt (z. B. IONOS oder STRATO).");
+      }
+    });
+  })();
+  </script>
 
   <div class="card">
     <h2 style="margin-top:0">DATEV-Export</h2>

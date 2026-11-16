@@ -118,3 +118,11 @@ def test_public_check_page_still_works():
 def test_create_page_script_is_not_html_escaped():
     page = TestClient(app).get("/erstellen").text
     assert 'const ENDPOINT = "/api/v1/generate";' in page
+
+
+def test_landing_and_check_page():
+    client = TestClient(app)
+    home = client.get("/")
+    assert home.status_code == 200 and "Kostenlos starten" in home.text
+    check = client.get("/pruefen")
+    assert check.status_code == 200 and 'hx-post="/pruefen"' in check.text
