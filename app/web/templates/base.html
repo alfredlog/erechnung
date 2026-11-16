@@ -66,7 +66,7 @@
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="brand" href="{{ '/eingang' if user else '/' }}">E-<span>Rechnung</span></a>
+  <a class="brand" href="{{ '/eingang' if user else '/' }}">E-Rechnung <span>Agent</span></a>
   <nav class="main">
     {% if user %}
       <a href="/eingang" class="{{ 'on' if nav == 'eingang' }}">Eingang</a>

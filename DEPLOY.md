@@ -23,29 +23,25 @@ curl localhost:8100/health
 Containers: `api` (website), `worker` (background processing), `kosit` (validator), `db` (PostgreSQL).
 Tables are created automatically on the first start.
 
-## 3. Domain with Nginx + HTTPS
+## 3. Domain with Caddy + HTTPS
 
-`/etc/nginx/sites-available/erechnung`:
+DNS at IONOS: A records for `@` and `www` → the VPS IP. Then add to `/etc/caddy/Caddyfile`:
 
-```nginx
-server {
-    server_name example.de www.example.de;
-    client_max_body_size 20m;
-
-    location / {
-        proxy_pass http://127.0.0.1:8100;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+```caddy
+erechnungagent.de, www.erechnungagent.de {
+    request_body {
+        max_size 20MB
     }
+    reverse_proxy 127.0.0.1:8100
 }
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/erechnung /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d example.de -d www.example.de
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
 ```
+
+Caddy gets the HTTPS certificate automatically and sets the X-Forwarded headers.
 
 ## 4. Backups (daily)
 
