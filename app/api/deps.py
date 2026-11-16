@@ -85,6 +85,7 @@ def require_user(user: User | None = Depends(optional_user)) -> User:
     return user
 
 
+PRIVATE_PAGES = {"passwort_neu.html", "passwort_vergessen.html", "einladung.html", "offline.html", "_result.html"}
 ROLES = {"owner": "Admin", "member": "Mitarbeiter", "advisor": "Steuerberater"}
 WRITERS = ("owner", "member")
 
@@ -106,6 +107,9 @@ def page(request: Request, name: str, user: User | None = None, **ctx):
     flash = FLASH.get(request.query_params.get("m", ""))
     role = user.role if user else None
     return templates.TemplateResponse(request, name, {"app_name": settings.app_name, "user": user,
+                                                      "base_url": settings.base_url.rstrip("/"),
+                                                      "noindex": user is not None or name in PRIVATE_PAGES
+                                                      or ctx.pop("noindex", False),
                                                       "flash": flash, "role": role, "ROLES": ROLES,
                                                       "can_write": role in WRITERS, "is_owner": role == "owner",
                                                       **ctx})

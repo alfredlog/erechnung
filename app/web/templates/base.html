@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ app_name }}{% endblock %}</title>
   <meta name="description" content="{% block description %}E-Rechnungen (XRechnung, ZUGFeRD) empfangen, prüfen, erstellen und an DATEV übergeben. Server in Deutschland.{% endblock %}">
+  {% if noindex %}<meta name="robots" content="noindex, nofollow">
+  {% else %}<link rel="canonical" href="{{ base_url }}{{ request.url.path }}">{% endif %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ app_name }}">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:title" content="{{ self.title() | trim }}">
+  <meta property="og:description" content="{{ self.description() | trim }}">
+  <meta property="og:url" content="{{ base_url }}{{ request.url.path }}">
+  <meta property="og:image" content="{{ base_url }}/static/og-image.png">
+  <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/static/favicon.ico" sizes="48x48">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -213,6 +224,7 @@
     {% else %}
       <a href="/pruefen" class="{{ 'on' if nav == 'pruefen' }}">Prüfen</a>
       <a href="/erstellen" class="{{ 'on' if nav == 'erstellen' }}">Erstellen</a>
+      <a href="/ratgeber" class="{{ 'on' if nav == 'ratgeber' }}">Ratgeber</a>
     {% endif %}
   </nav>
   {% if user %}
@@ -237,7 +249,7 @@
 </main>
 <footer class="site">
   <div>Daten werden auf Servern in Deutschland verarbeitet. Kein Ersatz für steuerliche Beratung.</div>
-  <nav class="legal-links"><a href="/app">App installieren</a> · <a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/agb">AGB</a> · <a href="/avv">AV-Vertrag</a></nav>
+  <nav class="legal-links"><a href="/ratgeber">Ratgeber</a> · <a href="/steuerberater">Für Steuerberater</a> · <a href="/app">App installieren</a> · <a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/agb">AGB</a> · <a href="/avv">AV-Vertrag</a></nav>
 </footer>
 {% if user %}<div id="ios-install" class="ios-install" hidden role="dialog" aria-label="App installieren">
   <button type="button" class="x" aria-label="Schließen">✕</button>

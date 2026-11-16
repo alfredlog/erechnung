@@ -2,6 +2,14 @@
 {% block title %}{{ app_name }} – E-Rechnungen automatisch empfangen, prüfen und an DATEV übergeben{% endblock %}
 {% block description %}E-Rechnung Agent liest XRechnung, ZUGFeRD, PDF und Scans aus, prüft sie gegen die offiziellen Regeln, erkennt Duplikate und geänderte IBANs und übergibt alles an DATEV. Server in Deutschland.{% endblock %}
 {% block head %}
+<script type="application/ld+json">
+{{ {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": app_name,
+    "applicationCategory": "BusinessApplication", "operatingSystem": "Web, iOS, Android",
+    "url": base_url ~ "/", "inLanguage": "de",
+    "description": "Empfängt, liest und prüft E-Rechnungen (XRechnung, ZUGFeRD, PDF, Scan) und übergibt sie an DATEV.",
+    "offers": {"@type": "AggregateOffer", "priceCurrency": "EUR", "lowPrice": "0", "highPrice": "39",
+               "offerCount": "4"}} | tojson }}
+</script>
 <style>
   .timeline .card, .steps .card, .features .card, .split .card, .pricing .card { margin-top:0; }
   .hero { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1.12fr); gap:48px; align-items:center; padding:28px 0 12px; }

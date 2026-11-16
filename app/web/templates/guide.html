@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ g.title }}{% endblock %}
+{% block description %}{{ g.description }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block head %}
+<style>
+  .guide .crumbs { font-size:14px; color:var(--muted); margin-bottom:10px; } .guide .crumbs a { color:var(--muted); }
+  .guide h1 { font-size:36px; }
+  .guide .lead { font-size:18px; }
+  .guide article h2 { font-size:22px; margin:34px 0 8px; }
+  .guide article p { max-width:68ch; color:#2b3444; }
+  .guide .tool { margin:6px 0 10px; }
+  .guide .cta-box { margin-top:40px; background:var(--ink); color:#fff; border-radius:16px; padding:26px; }
+  .guide .cta-box h2 { color:#fff; margin:0 0 6px; font-size:22px; } .guide .cta-box p { color:#c9d1de; margin:0 0 16px; }
+  .guide .cta-box .btn.ghost { background:rgba(255,255,255,.12); color:#fff; }
+  .guide .more { margin-top:36px; } .guide .more a { display:inline-block; margin-right:14px; line-height:2; }
+  .guide .updated { color:var(--muted); font-size:13px; margin-top:28px; }
+  details.faq { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  details.faq + details.faq { margin-top:10px; } details.faq summary { font-weight:700; cursor:pointer; }
+  details.faq p { color:var(--muted); margin:10px 0 2px; }
+</style>
+<script type="application/ld+json">
+{{ faq_ld | safe }}
+</script>
+{% endblock %}
+{% block content %}
+<div class="guide">
+  <p class="crumbs"><a href="/">Start</a> › <a href="/ratgeber">Ratgeber</a> › {{ g.short }}</p>
+  <h1>{{ g.h1 }}</h1>
+  <p class="lead">{{ g.intro }}</p>
+
+  {% if g.tool == "check" %}
+  <div class="tool">
+    <form hx-post="/pruefen" hx-encoding="multipart/form-data" hx-target="#result">
+      <label class="dropzone" data-busy="Wird geprüft:">
+        <input type="file" name="file" accept=".xml,.pdf" required aria-label="E-Rechnung auswählen">
+        <span class="dz-title">E-Rechnung hierher ziehen oder auswählen</span>
+        <span class="dz-sub">XRechnung (.xml) oder ZUGFeRD-PDF · kostenlos, ohne Anmeldung, wird nicht gespeichert</span>
+        <span class="dz-busy"></span>
+      </label>
+    </form>
+    <div id="result"></div>
+  </div>
+  {% elif g.tool == "create" %}
+  <p><a class="btn" href="/erstellen">Rechnung jetzt erstellen – kostenlos</a></p>
+  {% endif %}
+
+  <article>
+    {% for heading, paragraphs in g.sections %}
+    <h2>{{ heading }}</h2>
+    {% for p in paragraphs %}<p>{{ p }}</p>{% endfor %}
+    {% endfor %}
+
+    <h2>Häufige Fragen</h2>
+    {% for q, a in g.faq %}<details class="faq"><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}
+  </article>
+
+  <div class="cta-box">
+    {% if g.contact %}
+    <h2>Lassen Sie uns sprechen</h2>
+    <p>Schreiben Sie uns, wenn Sie E-Rechnung Agent Ihren Mandanten empfehlen möchten oder Fragen zum DATEV-Export haben.</p>
+    <div class="cta">{% if contact %}<a class="btn" href="mailto:{{ contact }}?subject=Kanzlei%20%E2%80%93%20E-Rechnung%20Agent">E-Mail schreiben</a>{% endif %}
+      <a class="btn ghost" href="/registrieren">Selbst testen</a></div>
+    {% else %}
+    <h2>Rechnungen, die sich selbst bearbeiten</h2>
+    <p>Eigene Eingangsadresse, automatische Prüfung, DATEV-Export. 30 Tage kostenlos testen, keine Kreditkarte.</p>
+    <div class="cta"><a class="btn" href="/registrieren">Kostenlos starten</a> <a class="btn ghost" href="/#preise">Preise ansehen</a></div>
+    {% endif %}
+  </div>
+
+  <p class="more"><b>Mehr im Ratgeber:</b><br>{% for s, label in others %}<a href="/{{ s }}">{{ label }}</a>{% endfor %}</p>
+  <p class="updated">Stand: {{ updated.strftime("%d.%m.%Y") }}. Allgemeine Informationen, keine Steuer- oder Rechtsberatung.</p>
+</div>
+{% endblock %}

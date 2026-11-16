@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Ratgeber E-Rechnung – XRechnung, ZUGFeRD, Pflichten | {{ app_name }}{% endblock %}
+{% block description %}Verständliche Antworten rund um die E-Rechnung: XRechnung öffnen, ZUGFeRD prüfen, E-Rechnungen erstellen, Pflichten ab 2025, 2027 und 2028.{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<h1>Ratgeber E-Rechnung</h1>
+<p class="lead">Kurze, verständliche Antworten – mit den passenden kostenlosen Werkzeugen direkt auf der Seite.</p>
+<div class="guide-list">
+  {% for slug, g in guides.items() %}
+  <a class="guide-item" href="/{{ slug }}"><b>{{ g.h1 }}</b><span>{{ g.description }}</span></a>
+  {% endfor %}
+</div>
+<style>
+  .guide-list { display:flex; flex-direction:column; border-top:1px solid var(--line); }
+  .guide-item { display:block; padding:16px 4px; border-bottom:1px solid var(--line); text-decoration:none; color:var(--ink); }
+  .guide-item:hover b { color:var(--accent); }
+  .guide-item b { display:block; font-family:var(--display); font-size:19px; } .guide-item span { color:var(--muted); font-size:15px; }
+</style>
+{% endblock %}

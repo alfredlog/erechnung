@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, billing, legal, public, pwa, team, workspace
+from app.api import auth, billing, legal, public, pwa, seo, team, workspace
 from app.api.deps import WEB_DIR, LoginRequired
 from app.core.config import settings
 from app.core.db import init_db
@@ -29,6 +29,7 @@ app.include_router(legal.router)
 app.include_router(billing.router)
 app.include_router(team.router)
 app.include_router(pwa.router)
+app.include_router(seo.router)
 
 
 @app.get("/favicon.ico", include_in_schema=False)

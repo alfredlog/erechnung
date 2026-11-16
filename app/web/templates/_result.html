@@ -3,7 +3,7 @@
 {% if r.error %}
   <div class="card"><span class="badge error">Nicht lesbar</span>
     <p>{{ r.error }}</p>
-    {% if r.format.value in ("pdf", "image") %}<p>Diese Datei enthält keine strukturierten Rechnungsdaten. Die automatische Erkennung von PDF/Scan kommt in einem späteren Modul.</p>{% endif %}
+    {% if r.format.value in ("pdf", "image") %}<p>Diese Datei ist keine E-Rechnung: Sie enthält keine strukturierten Rechnungsdaten (XML). Für die E-Rechnungspflicht zählt so eine Datei als „sonstige Rechnung“. Im kostenlosen Konto liest der Agent aber auch normale PDFs und Fotos aus – <a href="/registrieren">jetzt kostenlos testen</a>.</p>{% endif %}
   </div>
 {% else %}
   {% set inv = r.invoice %}
