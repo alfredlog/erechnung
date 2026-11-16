@@ -118,14 +118,18 @@ If the whole server is down, this script cannot send anything: add a free extern
 
 ## 9. Backups (daily)
 
+`scripts/backup.sh` saves the database and all original invoice files to `~/backups/erechnung`
+(30 days kept, folder readable only by you). The monitor warns when the newest backup is older
+than 26 hours.
+
 ```bash
-mkdir -p ~/backups/erechnung
+~/apps/erechnung/scripts/backup.sh          # once by hand, to test
 crontab -e
-# 03:15 every night: database dump + original files, keep 30 days
-15 3 * * * cd ~/apps/erechnung && docker compose exec -T db pg_dump -U erechnung erechnung | gzip > ~/backups/erechnung/db-$(date +\%F).sql.gz && docker run --rm -v erechnung_files:/data -v ~/backups/erechnung:/b alpine tar czf /b/files-$(date +\%F).tgz -C /data . && find ~/backups/erechnung -mtime +30 -delete
+15 3 * * * ~/apps/erechnung/scripts/backup.sh >> ~/backup.log 2>&1
 ```
 
-Copy the backups regularly to a second place (e.g. netcup storage or your laptop).
+Restore the database: `gunzip -c db-YYYY-MM-DD.sql.gz | docker compose exec -T db psql -U erechnung erechnung`
+(into an empty database). Copy the backups regularly to a second place (netcup storage, your laptop).
 
 ## 10. Update
 
