@@ -215,3 +215,12 @@ class OutgoingMail(Base):
     message_id: Mapped[str] = mapped_column(String(300), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class InboundFormerAddress(Base):
+    """An address the company used before renaming. Keeps working, so no supplier's invoice is lost."""
+    __tablename__ = "inbound_former_addresses"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    local_part: Mapped[str] = mapped_column(String(64), unique=True)
+    replaced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

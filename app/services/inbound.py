@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import email
 import re
-import secrets
 import unicodedata
 from email.header import decode_header, make_header
 from email.message import Message
@@ -20,12 +19,14 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.tables import InboundAddress, InboundNotice, Organization
+from app.core.tables import InboundAddress, InboundFormerAddress, InboundNotice, Organization
 from app.services import agent, audit
 from app.services.mail import attachments
 
 KEEP_NOTICES = 20
-ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"  # no 0/o, 1/l/i: easy to read and type
+LOCAL_PART = re.compile(r"^[a-z0-9](?:[a-z0-9.-]{1,38}[a-z0-9])$")
+RESERVED = {"postmaster", "abuse", "admin", "administrator", "root", "hostmaster", "webmaster", "mailer-daemon",
+            "noreply", "no-reply", "support", "info", "rechnung", "rechnungen", "test", "security", "kontakt"}
 _LINK = re.compile(r"https://[^\s<>\"')\]]+")
 
 
@@ -35,20 +36,68 @@ def _slug(name: str) -> str:
     return text[:24].strip("-") or "firma"
 
 
+def _taken(db: Session, local: str, org_id: int | None = None) -> bool:
+    """Used by another company, now or before (former addresses keep working, so never reuse them)."""
+    current = db.scalar(select(InboundAddress.organization_id).where(InboundAddress.local_part == local))
+    former = db.scalar(select(InboundFormerAddress.organization_id).where(InboundFormerAddress.local_part == local))
+    return any(owner is not None and owner != org_id for owner in (current, former)) or local in RESERVED
+
+
 def address_for(db: Session, org: Organization) -> InboundAddress:
-    """The company's receiving address, created on first use."""
+    """The company's receiving address, created on first use: firmenname@…, firmenname-2@… if taken."""
     row = db.scalar(select(InboundAddress).where(InboundAddress.organization_id == org.id))
     if row:
         return row
-    while True:
-        local = f"{_slug(org.name)}-{''.join(secrets.choice(ALPHABET) for _ in range(6))}"
-        if not db.scalar(select(InboundAddress).where(InboundAddress.local_part == local)):
-            break
+    base = _slug(org.name)
+    if len(base) < 3:
+        base = f"{base}-firma"
+    local, n = base, 1
+    while _taken(db, local):
+        n += 1
+        local = f"{base}-{n}"
     row = InboundAddress(organization_id=org.id, local_part=local)
     db.add(row)
     audit.log(db, org.id, "inbound_address_created", address=local)
     db.commit()
     return row
+
+
+class AddressError(ValueError):
+    pass
+
+
+def rename(db: Session, org: Organization, wanted: str, user_id: int | None = None) -> InboundAddress:
+    """Changes the address. The old one keeps working as a former address."""
+    row = address_for(db, org)
+    local = wanted.strip().lower().rpartition("@")[0] or wanted.strip().lower()
+    if local == row.local_part:
+        return row
+    if can_rename(db, org.id) is False:
+        raise AddressError("Die Adresse wurde bereits einmal geändert. Für eine weitere Änderung "
+                           "schreib uns bitte an den Support.")
+    if not LOCAL_PART.match(local) or ".." in local or "--" in local:
+        raise AddressError("Erlaubt sind 3–40 Zeichen: Kleinbuchstaben, Ziffern, Punkt und Bindestrich "
+                           "(nicht am Anfang oder Ende).")
+    if _taken(db, local, org.id):
+        raise AddressError("Diese Adresse ist leider schon vergeben. Bitte eine andere wählen.")
+    old = row.local_part
+    db.add(InboundFormerAddress(organization_id=org.id, local_part=old))
+    row.local_part = local
+    audit.log(db, org.id, "inbound_address_changed", user_id=user_id, old=old, new=local)
+    db.commit()
+    return row
+
+
+def can_rename(db: Session, org_id: int) -> bool:
+    """Each company may change its address once (every change leaves a former address behind)."""
+    return db.scalar(select(InboundFormerAddress.id).where(InboundFormerAddress.organization_id == org_id)
+                     .limit(1)) is None
+
+
+def former_addresses(db: Session, org_id: int) -> list[str]:
+    return [f"{x}@{settings.inbound_domain}" for x in db.scalars(
+        select(InboundFormerAddress.local_part).where(InboundFormerAddress.organization_id == org_id)
+        .order_by(InboundFormerAddress.replaced_at.desc()))]
 
 
 def full_address(row: InboundAddress) -> str:
@@ -61,7 +110,8 @@ def lookup(db: Session, address: str) -> int | None:
     if not local or not settings.inbound_domain or domain != settings.inbound_domain:
         return None
     local = local.split("+", 1)[0]
-    return db.scalar(select(InboundAddress.organization_id).where(InboundAddress.local_part == local))
+    return (db.scalar(select(InboundAddress.organization_id).where(InboundAddress.local_part == local))
+            or db.scalar(select(InboundFormerAddress.organization_id).where(InboundFormerAddress.local_part == local)))
 
 
 def _header(msg: Message, name: str) -> str:

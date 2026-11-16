@@ -234,8 +234,25 @@ def _inbound_address(db: Session, org: Organization) -> str | None:
 @router.get("/eingangsadresse", response_class=HTMLResponse)
 def inbound_page(request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)):
     org = _org(db, user)
-    return page(request, "eingangsadresse.html", user, nav="eingang", address=_inbound_address(db, org),
-                notices=inbound.notices(db, org.id), company=org.name)
+    address = _inbound_address(db, org)
+    return page(request, "eingangsadresse.html", user, nav="eingang", address=address,
+                local_part=address.rpartition("@")[0] if address else "", domain=settings.inbound_domain,
+                former=inbound.former_addresses(db, org.id) if address else [],
+                can_rename=inbound.can_rename(db, org.id),
+                notices=inbound.notices(db, org.id), company=org.name,
+                rename_error=request.query_params.get("rename_error", ""))
+
+
+@router.post("/eingangsadresse/aendern")
+def rename_inbound(local_part: str = Form(""), user: User = Depends(require_user), db: Session = Depends(get_db)):
+    from urllib.parse import quote
+    if not settings.inbound_domain:
+        raise HTTPException(404)
+    try:
+        inbound.rename(db, _org(db, user), local_part, user.id)
+    except inbound.AddressError as exc:
+        return RedirectResponse(f"/eingangsadresse?rename_error={quote(str(exc))}#adresse", 303)
+    return RedirectResponse("/eingangsadresse?m=address_changed#adresse", 303)
 
 
 @router.get("/eingangsadresse/nachrichten", response_class=HTMLResponse)

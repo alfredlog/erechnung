@@ -23,10 +23,25 @@
 {% if not address %}
 <div class="card"><p style="margin:0">Der E-Mail-Empfang ist auf diesem Server noch nicht eingerichtet. Du kannst Rechnungen im <a href="/eingang">Eingang</a> hochladen.</p></div>
 {% else %}
-<div class="card">
+<div class="card" id="adresse">
   <label>Deine Eingangsadresse</label>
   <div class="addr"><code id="addr">{{ address }}</code><button type="button" class="small" data-copy="addr">Kopieren</button></div>
   <p class="muted small" style="margin:10px 0 0">Angenommen werden PDF, XRechnung/ZUGFeRD (XML) und Scans (Bilder). E-Mails ohne Rechnung erscheinen unten unter „Nachrichten“.</p>
+  {% if rename_error %}<div class="flash error" style="margin:12px 0 0">{{ rename_error }}</div>{% endif %}
+  {% if can_rename %}
+  <details style="margin-top:12px" {% if rename_error %}open{% endif %}>
+    <summary class="small" style="cursor:pointer;font-weight:700">Adresse ändern (einmalig möglich)</summary>
+    <form method="post" action="/eingangsadresse/aendern" class="row" style="margin-top:10px;gap:6px">
+      <input type="text" name="local_part" value="{{ local_part }}" required pattern="[a-z0-9][a-z0-9.\-]{1,38}[a-z0-9]"
+             title="3–40 Zeichen: Kleinbuchstaben, Ziffern, Punkt, Bindestrich" style="flex:1;min-width:180px"
+             oninput="this.value=this.value.toLowerCase()">
+      <span class="muted">@{{ domain }}</span>
+      <button class="small">Speichern</button>
+    </form>
+    <p class="muted small" style="margin:8px 0 0">Du kannst die Adresse nur <b>einmal</b> ändern – wähle sie also gut. Die bisherige Adresse funktioniert danach weiter, damit keine Rechnung verloren geht.</p>
+  </details>
+  {% endif %}
+  {% if former %}<p class="muted small" style="margin:10px 0 0">Funktionieren weiterhin: {{ former | join(", ") }}</p>{% endif %}
 </div>
 
 <h2>Weg 1 – am einfachsten: Lieferanten schicken direkt an diese Adresse</h2>
