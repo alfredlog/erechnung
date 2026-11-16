@@ -11,8 +11,8 @@
 <div class="card">
   <div class="row spread"><h2 style="margin:0">Zugänge</h2>
     <span class="muted small">{{ seats.used }} von {{ seats.limit }} Nutzern im Tarif {{ seats.plan.name }} · Steuerberater zählen nicht</span></div>
-  <table style="margin-top:12px">
-    <thead><tr><th>E-Mail</th><th>Rolle</th><th>Seit</th><th></th></tr></thead>
+  <table class="team" style="margin-top:12px">
+    <thead><tr><th>E-Mail</th><th>Rolle</th><th>Datum</th><th></th></tr></thead>
     <tbody>
     {% for p in people %}
       <tr>
@@ -27,7 +27,7 @@
           </form>
           {% endif %}
         </td>
-        <td class="muted small">{{ p.created_at.strftime("%d.%m.%Y") }}</td>
+        <td class="muted small since">seit {{ p.created_at.strftime("%d.%m.%Y") }}</td>
         <td style="text-align:right">{% if p.id != user.id %}
           <form method="post" action="/team/{{ p.id }}/entfernen" style="margin:0" onsubmit="return confirm('Zugang von {{ p.email }} wirklich entfernen?')"><button class="ghost small danger">Entfernen</button></form>
         {% endif %}</td>
@@ -36,7 +36,7 @@
     {% for i in invites %}
       <tr class="muted">
         <td>{{ i.email }}</td><td>{{ ROLES[i.role] }} <span class="badge info">eingeladen</span></td>
-        <td class="small">bis {{ i.expires_at.strftime("%d.%m.%Y") }}</td>
+        <td class="small since">gültig bis {{ i.expires_at.strftime("%d.%m.%Y") }}</td>
         <td style="text-align:right"><form method="post" action="/team/einladung/{{ i.token_hash }}/zurueckziehen" style="margin:0"><button class="ghost small">Zurückziehen</button></form></td>
       </tr>
     {% endfor %}

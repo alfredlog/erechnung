@@ -161,6 +161,17 @@
     @media (max-width: 900px) { .start-steps { grid-template-columns:1fr 1fr; } }
     @media (max-width: 520px) { .start-steps { grid-template-columns:1fr; } }
     html.standalone .web-back { display:none; }
+    td { overflow-wrap:anywhere; }
+    @media (max-width: 760px) {
+      table.team thead { display:none; }
+      table.team, table.team tbody { display:block; }
+      table.team tr { display:grid; grid-template-columns:1fr auto; gap:6px 10px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+      table.team td { border:0; padding:0; }
+      table.team td:first-child { grid-column:1 / -1; font-weight:600; }
+      table.team td.since { grid-column:1 / -1; grid-row:3; }
+      table.team td:last-child { grid-column:2; grid-row:2; }
+      table.team select { width:auto; max-width:100%; }
+    }
     @media (max-width: 760px) {
       table.fields, table.fields tbody, table.fields tr, table.fields td { display:block; width:auto !important; }
       table.fields tr { display:grid; grid-template-columns:1fr auto; gap:2px 10px; padding:10px 0; border-bottom:1px solid var(--line); }

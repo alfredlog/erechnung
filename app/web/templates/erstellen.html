@@ -1,5 +1,20 @@
 {% extends "base.html" %}
 {% block title %}E-Rechnung erstellen – ZUGFeRD & XRechnung{% endblock %}
+{% block head %}<style>
+  #lines .w-qty { text-align:right; width:80px; } #lines .w-price { text-align:right; width:110px; }
+  @media (max-width: 760px) {
+    #lines thead { display:none; }
+    #lines, #lines tbody { display:block; }
+    #lines tr { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; padding:14px 0; border-bottom:1px solid var(--line); }
+    #lines td { border:0; padding:0; }
+    #lines td::before { content:attr(data-l); display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:3px; }
+    #lines td.l-name { grid-column:1 / -1; }
+    #lines .w-qty, #lines .w-price { width:100%; }
+    #lines td.l-net { align-self:center; font-weight:700; text-align:left; }
+    #lines td.l-del { align-self:end; text-align:right; } #lines td.l-del::before { content:""; }
+    .table-wrap:has(#lines) { overflow:visible; }
+  }
+</style>{% endblock %}
 {% block content %}
 <h1>{{ "Rechnung schreiben" if logged_in else "E-Rechnung erstellen" }}</h1>
 <p class="lead">ZUGFeRD-PDF (lesbar + maschinenlesbar, für Geschäftskunden) oder XRechnung (XML, für Behörden). Summen und Umsatzsteuer werden automatisch berechnet.</p>
@@ -84,13 +99,13 @@ const cent = v => Math.round((v + Number.EPSILON) * 100) / 100;
 
 function addLine(d = {}) {
   const tr = document.createElement("tr");
-  tr.innerHTML = `<td><input type="text" data-k="name" value="${d.name || ""}"></td>
-    <td><input type="text" data-k="quantity" value="${d.quantity || "1"}" style="text-align:right;width:80px"></td>
-    <td><select data-k="unit_code">${UNITS.map(u => `<option value="${u[0]}">${u[1]}</option>`).join("")}</select></td>
-    <td><input type="text" data-k="unit_price" value="${d.unit_price || ""}" placeholder="0,00" style="text-align:right;width:110px"></td>
-    <td><select data-k="vat_rate"><option>19</option><option>7</option><option>0</option></select></td>
-    <td class="num" data-net>0,00 €</td>
-    <td><button type="button" class="ghost small" aria-label="Position entfernen" onclick="this.closest('tr').remove();calc()">×</button></td>`;
+  tr.innerHTML = `<td data-l="Bezeichnung" class="l-name"><input type="text" data-k="name" value="${d.name || ""}" aria-label="Bezeichnung" placeholder="Leistung oder Artikel"></td>
+    <td data-l="Menge"><input type="text" inputmode="decimal" data-k="quantity" value="${d.quantity || "1"}" class="w-qty" aria-label="Menge"></td>
+    <td data-l="Einheit"><select data-k="unit_code" aria-label="Einheit">${UNITS.map(u => `<option value="${u[0]}">${u[1]}</option>`).join("")}</select></td>
+    <td data-l="Einzelpreis netto"><input type="text" inputmode="decimal" data-k="unit_price" value="${d.unit_price || ""}" placeholder="0,00" class="w-price" aria-label="Einzelpreis netto"></td>
+    <td data-l="USt %"><select data-k="vat_rate" aria-label="Umsatzsteuer"><option>19</option><option>7</option><option>0</option></select></td>
+    <td class="num l-net" data-l="Netto" data-net>0,00 €</td>
+    <td class="l-del"><button type="button" class="ghost small" aria-label="Position entfernen" onclick="this.closest('tr').remove();calc()">×</button></td>`;
   tbody.appendChild(tr);
   tr.querySelectorAll("input,select").forEach(el => el.addEventListener("input", calc));
   calc();
