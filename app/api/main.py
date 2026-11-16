@@ -5,7 +5,7 @@ import hmac
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.api import auth, billing, legal, public, pwa, seo, team, workspace
@@ -30,6 +30,17 @@ app.include_router(billing.router)
 app.include_router(team.router)
 app.include_router(pwa.router)
 app.include_router(seo.router)
+
+
+@app.middleware("http")
+async def head_as_get(request, call_next):
+    """HEAD = GET without body. Search engines and link checkers use it (e.g. for sitemap.xml)."""
+    if request.method != "HEAD":
+        return await call_next(request)
+    request.scope["method"] = "GET"
+    response = await call_next(request)
+    headers = {k: v for k, v in response.headers.items() if k.lower() != "content-length"}
+    return Response(status_code=response.status_code, headers=headers)
 
 
 @app.get("/favicon.ico", include_in_schema=False)

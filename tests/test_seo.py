@@ -46,3 +46,11 @@ def test_preview_tags_and_private_pages():
     me.post("/registrieren", data={"accept": "on", "company": "SEO GmbH", "email": f"{uuid.uuid4().hex[:8]}@x.de",
                                    "password": "geheim12345!"})
     assert 'name="robots" content="noindex' in me.get("/eingang").text
+
+
+def test_head_requests_work():
+    for path in ("/sitemap.xml", "/robots.txt", "/", "/xrechnung-oeffnen"):
+        r = c.head(path)
+        assert r.status_code == 200, path
+        assert r.content == b""
+    assert c.head("/sitemap.xml").headers["content-type"].startswith("application/xml")
