@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Tarif – {{ app_name }}{% endblock %}
+{% block head %}
+<style>
+  .usage { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .bar { height:8px; background:var(--soft); border-radius:99px; overflow:hidden; margin-top:8px; }
+  .bar i { display:block; height:100%; background:var(--accent); border-radius:99px; }
+  .bar.full i { background:var(--err); }
+  .toggle { display:inline-flex; background:var(--soft); border-radius:10px; padding:4px; gap:4px; margin:6px 0 16px; }
+  .toggle button { background:transparent; color:var(--muted); padding:7px 14px; }
+  .toggle button.on { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .plans { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .plans .card { margin-top:0; display:flex; flex-direction:column; }
+  .plans .card.best { outline:2px solid var(--accent); }
+  .plans .card.current { background:var(--soft); }
+  .price { font-size:30px; font-weight:800; letter-spacing:-.02em; margin:6px 0 2px; }
+  .plans ul { list-style:none; padding:0; margin:12px 0 16px; flex:1; font-size:14px; }
+  .plans li { padding:4px 0; } .plans li.no { color:var(--muted); text-decoration:line-through; }
+  .yearly { display:none; } body.year .yearly { display:block; } body.year .monthly { display:none; }
+  @media (max-width: 900px) { .plans { grid-template-columns:1fr 1fr; } .usage { grid-template-columns:1fr; } }
+  @media (max-width: 560px) { .plans { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<h1>Tarif</h1>
+{% set p = u.plan %}
+{% if not u.enabled %}
+  <p class="lead">Auf diesem Server sind keine Tarife aktiv – alle Funktionen sind unbegrenzt nutzbar.</p>
+{% else %}
+<p class="lead">
+  {% if u.paid %}Dein Tarif: <b>{{ p.name }}</b> ({{ "jährlich" if u.sub.interval == "year" else "monatlich" }}){% if u.sub.cancel_at_period_end and u.sub.current_period_end %} – gekündigt zum {{ u.sub.current_period_end.strftime("%d.%m.%Y") }}{% elif u.sub.current_period_end %} – verlängert sich am {{ u.sub.current_period_end.strftime("%d.%m.%Y") }}{% endif %}.
+    {% if u.sub.status == "past_due" %}<br><span class="badge error">Zahlung fehlgeschlagen</span> Bitte Zahlungsmethode im Kundenportal prüfen.{% endif %}
+  {% elif u.trial_days is not none %}Du testest gerade <b>{{ p.name }}</b> kostenlos – noch <b>{{ u.trial_days }} Tage</b>. Danach geht es automatisch mit Free weiter, wenn du keinen Tarif wählst. Keine Kreditkarte nötig.
+  {% else %}Dein Tarif: <b>Free</b>.{% endif %}
+</p>
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+
+<div class="usage">
+  {% for label, used, limit in [("Eingangsrechnungen diesen Monat", u.inbound, p.inbound), ("Geschriebene Rechnungen diesen Monat", u.outbound, p.outbound)] %}
+  <div class="card" style="margin-top:0">
+    <div class="row spread"><b>{{ label }}</b><span>{{ used }} / {{ "unbegrenzt" if limit is none else limit }}</span></div>
+    {% if limit %}<div class="bar {{ 'full' if used >= limit }}"><i style="width:{{ [100, (used * 100 / limit)|round|int]|min }}%"></i></div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+<p class="muted small">Es zählen nur echte Rechnungen. E-Mails ohne Anhang, doppelte Dateien und Dokumente unter „Keine Rechnung“ zählen nicht. Über dem Limit geht nichts verloren: Rechnungen werden gespeichert und verarbeitet, sobald wieder Platz ist.</p>
+
+{% if u.paid %}
+<form method="post" action="/tarif/portal" style="margin:10px 0 24px"><button>Tarif wechseln, kündigen oder Rechnungen ansehen</button></form>
+{% endif %}
+
+<h2>Tarife</h2>
+<div class="toggle" role="group"><button type="button" class="on" data-int="month">Monatlich</button><button type="button" data-int="year">Jährlich – 2 Monate gratis</button></div>
+<div class="plans">
+  {% for key in ["free"] + PAID|list %}{% set x = PLANS[key] %}
+  <div class="card {{ 'best' if key == 'business' }} {{ 'current' if (u.paid and u.sub.plan == key) or (not u.paid and u.trial_days is none and key == 'free') }}">
+    <div><b>{{ x.name }}</b>{% if key == "business" %} <span class="badge info">Beliebt</span>{% endif %}</div>
+    <div class="price monthly">{{ x.monthly_eur }} €<span class="muted small" style="font-weight:500"> / Monat</span></div>
+    <div class="price yearly">{{ x.yearly_eur }} €<span class="muted small" style="font-weight:500"> / Jahr</span></div>
+    <ul>
+      <li>{{ x.inbound }} Eingangsrechnungen / Monat</li>
+      <li>{{ "Unbegrenzt" if x.outbound is none else x.outbound }} Rechnungen schreiben{% if x.outbound %} / Monat{% endif %}</li>
+      <li>Eingangsadresse, Agent, DATEV-Export</li>
+      <li class="{{ '' if x.send_mail else 'no' }}">Rechnungen per E-Mail senden</li>
+      <li class="{{ '' if x.ai else 'no' }}">KI liest PDFs und Scans</li>
+      <li>{{ x.users }} Nutzer</li>
+    </ul>
+    {% if key == "free" %}
+      <span class="muted small">Immer kostenlos</span>
+    {% elif u.paid and u.sub.plan == key %}
+      <span class="badge ok">Aktueller Tarif</span>
+    {% else %}
+      <form method="post" action="/tarif/checkout">
+        <input type="hidden" name="plan" value="{{ key }}"><input type="hidden" name="interval" value="month" class="interval">
+        <button style="width:100%" class="{{ '' if key == 'business' else 'ghost' }}">{{ "Wechseln" if u.paid else "Auswählen" }}</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+<p class="muted small" style="margin-top:14px">Preise pro Monat bzw. Jahr{% if small_business %}, gemäß § 19 UStG ohne Umsatzsteuer{% endif %}. Zahlung per Kreditkarte oder SEPA-Lastschrift über Stripe. Monatlich kündbar, Jahrestarife zum Ende der Laufzeit.{% if u.trial_days is not none %} Wenn du während des Tests buchst, beginnt die Zahlung erst nach den verbleibenden Testtagen.{% endif %}</p>
+{% endif %}
+<script>
+document.querySelectorAll(".toggle button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".toggle button").forEach(x => x.classList.toggle("on", x === b));
+  document.body.classList.toggle("year", b.dataset.int === "year");
+  document.querySelectorAll("input.interval").forEach(i => i.value = b.dataset.int);
+}));
+</script>
+{% endblock %}

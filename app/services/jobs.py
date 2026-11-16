@@ -48,7 +48,7 @@ def run(db: Session, job: Job) -> None:
         if job.kind == "process_invoice":
             row = db.get(Invoice, job.payload["invoice_id"])
             if row is not None and row.status == "processing":
-                agent.process(db, row)
+                agent.process(db, row, force_invoice=bool(job.payload.get("force_invoice")))
         elif job.kind == "poll_mailbox":
             mail.poll(db, job.organization_id)
         elif job.kind == "send_invoice_mail":

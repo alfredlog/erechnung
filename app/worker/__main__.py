@@ -53,6 +53,8 @@ def main() -> None:
         with SessionLocal() as db:
             if time.monotonic() - last_schedule > 60:
                 schedule_mailboxes(db)
+                from app.services import billing
+                billing.release_all(db)  # invoices held by the monthly limit, once there is room
                 last_schedule = time.monotonic()
             job = jobs.claim(db)
             if job:

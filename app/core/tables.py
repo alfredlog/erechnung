@@ -234,3 +234,19 @@ class PasswordReset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Subscription(Base):
+    """The company's plan. Without Stripe data it is the free trial, then Free."""
+    __tablename__ = "subscriptions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), unique=True)
+    plan: Mapped[str] = mapped_column(String(20), default="free")        # free / start / business / pro
+    interval: Mapped[str] = mapped_column(String(10), default="")        # month / year
+    status: Mapped[str] = mapped_column(String(30), default="")          # Stripe status, e.g. active / past_due
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False)
+    stripe_customer_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    stripe_subscription_id: Mapped[str] = mapped_column(String(100), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)

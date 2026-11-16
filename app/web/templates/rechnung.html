@@ -83,7 +83,14 @@
           <button class="danger">Ablehnen</button>
         </form>
       </div>
+      <form method="post" action="/rechnung/{{ row.id }}/keine-rechnung" style="margin-top:8px"><button class="ghost small">Keine Rechnung (z. B. Lieferschein)</button></form>
       <p class="muted small">Freigeben bestätigt auch den Rechnungssteller und seine IBAN. Künftige Rechnungen von ihm können dann automatisch durchlaufen.</p>
+      {% elif row.status == "not_invoice" %}
+      <p class="muted">{{ row.review_reasons[0] if row.review_reasons else "Keine Rechnung." }}</p>
+      <form method="post" action="/rechnung/{{ row.id }}/doch-rechnung"><button class="small">Doch eine Rechnung – verarbeiten</button></form>
+      {% elif row.status == "limit" %}
+      <p class="muted">{{ row.review_reasons[0] if row.review_reasons else "" }}</p>
+      <a class="btn small" href="/tarif">Tarif ansehen</a>
       {% elif row.status == "approved" and row.direction == "in" %}
       <p class="muted">Freigegeben – kommt mit dem nächsten Export zum Steuerberater.</p>
       <form method="post" action="/rechnung/{{ row.id }}/ablehnen"><button class="danger small">Doch ablehnen</button></form>

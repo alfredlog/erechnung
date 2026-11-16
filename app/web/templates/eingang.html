@@ -4,11 +4,17 @@
 <div class="row spread"><h1>Rechnungseingang</h1></div>
 <p class="lead">Rechnungen hochladen{% if inbound_address %} oder per E-Mail an <strong>{{ inbound_address }}</strong> schicken (<a href="/eingangsadresse">so geht's</a>){% elif mailbox %} oder an <strong>{{ mailbox }}</strong> schicken{% endif %}. Der Agent liest, prüft und gibt sichere Rechnungen selbst frei. Alles andere landet hier unter „Offen“ – mit Begründung.</p>
 
+{% if usage.enabled %}
+  {% if stats.limit %}<div class="flash warning">{{ stats.limit }} Rechnung(en) warten, weil das Monatslimit deines Tarifs ({{ usage.plan.inbound }}) erreicht ist. Nichts geht verloren. <a href="/tarif">Jetzt upgraden</a></div>
+  {% elif usage.trial_days is not none and usage.trial_days <= 5 %}<div class="flash info">Dein kostenloser Test endet in {{ usage.trial_days }} Tag(en). <a href="/tarif">Tarif wählen</a></div>{% endif %}
+  <p class="muted small" style="margin:-10px 0 14px">{{ usage.inbound }} von {{ "unbegrenzt" if usage.plan.inbound is none else usage.plan.inbound }} Rechnungen diesen Monat · Tarif {{ usage.plan.name }}{% if usage.trial_days is not none %} (Test){% endif %} · <a href="/tarif">Details</a></p>
+{% endif %}
 <div class="stats">
   {% for key, label in [("offen", "Offen"), ("freigegeben", "Freigegeben"), ("exportiert", "Exportiert"), ("abgelehnt", "Abgelehnt")] %}
   <a class="stat {{ 'on' if f == key }}" href="/eingang?f={{ key }}"><b>{{ stats[key] }}</b><span>{{ label }}</span></a>
   {% endfor %}
 </div>
+{% if stats.keine %}<p class="small" style="margin:-8px 0 14px"><a href="/eingang?f=keine">{{ stats.keine }} Dokument(e) unter „Keine Rechnung“</a> <span class="muted">– zählen nicht für das Limit</span></p>{% endif %}
 
 <form class="drop" method="post" action="/eingang/upload" enctype="multipart/form-data">
   <p style="margin:0 0 10px"><strong>PDF, XRechnung (XML), ZUGFeRD oder Scan (JPG/PNG)</strong> – auch mehrere auf einmal</p>

@@ -71,7 +71,23 @@ MAIL_FROM=rechnungen@erechnungagent.de
 Then `docker compose up -d api worker`. Sender shown to customers: "<Firma> via E-Rechnung Agent",
 Reply-To = the company's own e-mail. Max. `MAX_MAILS_PER_DAY` mails per company and day.
 
-## 6. Backups (daily)
+## 6. Plans and payments (Stripe)
+
+Plans and prices are defined in `app/services/billing.py` (PLANS). One command creates or updates
+products, prices, the customer portal and the webhook in Stripe – for test and live mode alike:
+
+```bash
+# .env: STRIPE_SECRET_KEY=sk_test_…   (later sk_live_…)
+docker compose run --rm api python -m app.services.billing setup
+# copy the printed STRIPE_WEBHOOK_SECRET=whsec_… into .env, then:
+docker compose up -d api worker
+```
+
+Run the command again after changing prices: new prices are created and take over the lookup keys,
+existing subscribers keep their price until they change plan. `--reset-webhook` recreates the
+webhook (new secret). Test cards: 4242 4242 4242 4242, any future date, any CVC.
+
+## 7. Backups (daily)
 
 ```bash
 mkdir -p ~/backups/erechnung
@@ -82,13 +98,13 @@ crontab -e
 
 Copy the backups regularly to a second place (e.g. netcup storage or your laptop).
 
-## 7. Update
+## 8. Update
 
 ```bash
 cd ~/apps/erechnung && git pull && docker compose up -d --build
 ```
 
-## 8. PDF Libre tools
+## 9. PDF Libre tools
 
 PDF Libre's `.env`: `ERECHNUNG_API_URL=http://127.0.0.1:8100`. The tools "XRechnung anzeigen"
 and "E-Rechnung prüfen" call `POST /api/v1/render`.

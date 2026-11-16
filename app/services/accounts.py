@@ -35,6 +35,9 @@ def register(db: Session, company: str, email: str, password: str, terms_version
     db.add(user)
     db.flush()
     audit.log(db, org.id, "account_created", user_id=user.id)
+    from app.services import billing
+    db.flush()
+    billing.subscription(db, org)  # starts the free trial
     if terms_version:  # proof that AGB + AVV were accepted, with the version
         audit.log(db, org.id, "terms_accepted", user_id=user.id, agb=terms_version, avv=terms_version)
     db.commit()

@@ -47,3 +47,9 @@ Auto-approved correctly: **27** · auto-approved wrong: **0** · sent to review:
 The test documents share one layout (ours). Real supplier invoices vary much more; the LLM
 extractor is meant for those and must be measured on a set of real, anonymised invoices before
 the automatic approval is switched on for PDFs at a customer.
+
+## "Keine Rechnung" check
+
+Documents without any invoice wording and without invoice data (or that call themselves
+Lieferschein, Angebot, AGB …) are filed as "Keine Rechnung" and do not count for the plan
+limit. On the 86 text PDFs and 43 scans above: **0** real invoices wrongly filed there.

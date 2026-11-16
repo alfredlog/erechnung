@@ -3,7 +3,7 @@
 {% block description %}E-Rechnung Agent liest XRechnung, ZUGFeRD, PDF und Scans aus, prüft sie gegen die offiziellen Regeln, erkennt Duplikate und geänderte IBANs und übergibt alles an DATEV. Server in Deutschland.{% endblock %}
 {% block head %}
 <style>
-  .timeline .card, .steps .card, .features .card, .split .card { margin-top:0; }
+  .timeline .card, .steps .card, .features .card, .split .card, .pricing .card { margin-top:0; }
   .hero { display:grid; grid-template-columns: 1.1fr 1fr; gap:40px; align-items:center; padding:28px 0 12px; }
   .hero h1 { font-size:44px; line-height:1.1; letter-spacing:-.025em; margin:0 0 16px; }
   .hero h1 em { font-style:normal; color:var(--accent); }
@@ -44,15 +44,20 @@
   details.faq + details.faq { margin-top:10px; }
   details.faq summary { font-weight:700; cursor:pointer; }
   details.faq p { color:var(--muted); margin:10px 0 2px; }
+  .pricing { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .pricing .card { margin-top:0; } .pricing .card.best { outline:2px solid var(--accent); }
+  .pricing .price { font-size:30px; font-weight:800; margin:6px 0; } .pricing .price span { font-size:14px; color:var(--muted); font-weight:500; }
+  .pricing ul { list-style:none; padding:0; margin:10px 0 0; font-size:14px; } .pricing li { padding:4px 0; }
+  .pricing li.no { color:var(--muted); text-decoration:line-through; }
   .final { margin-top:72px; background:var(--ink); color:#fff; border-radius:18px; padding:40px; text-align:center; }
   .final h2 { color:#fff; font-size:28px; margin:0 0 8px; }
   .final p { color:#c9d1de; margin:0 0 22px; }
   .final .btn.ghost { background:rgba(255,255,255,.12); color:#fff; }
   @media (max-width: 900px) {
     .hero, .split { grid-template-columns:1fr; } .hero h1 { font-size:34px; }
-    .steps, .features { grid-template-columns:1fr 1fr; } .timeline { grid-template-columns:1fr; }
+    .steps, .features, .pricing { grid-template-columns:1fr 1fr; } .timeline { grid-template-columns:1fr; }
   }
-  @media (max-width: 560px) { .steps, .features { grid-template-columns:1fr; } .final { padding:28px 18px; } }
+  @media (max-width: 560px) { .steps, .features, .pricing { grid-template-columns:1fr; } .final { padding:28px 18px; } }
 </style>
 {% endblock %}
 {% block content %}
@@ -141,6 +146,27 @@
   </div>
 </section>
 
+<section class="block" id="preise">
+  <h2>Preise</h2>
+  <p class="lead">{{ trial_days }} Tage alles testen, ohne Kreditkarte. Danach den passenden Tarif wählen – oder kostenlos mit Free weitermachen.</p>
+  <div class="pricing">
+    {% for key in ["free", "start", "business", "pro"] %}{% set x = PLANS[key] %}
+    <div class="card {{ 'best' if key == 'business' }}">
+      <b>{{ x.name }}</b>{% if key == "business" %} <span class="badge info">Beliebt</span>{% endif %}
+      <div class="price">{{ x.monthly_eur }} €<span> / Monat</span></div>
+      <ul>
+        <li>{{ x.inbound }} Eingangsrechnungen / Monat</li>
+        <li>{{ "Unbegrenzt Rechnungen schreiben" if x.outbound is none else x.outbound ~ " Rechnungen schreiben / Monat" }}</li>
+        <li class="{{ '' if x.send_mail else 'no' }}">Rechnungen per E-Mail senden</li>
+        <li class="{{ '' if x.ai else 'no' }}">KI liest PDFs und Scans</li>
+        <li>{{ x.users }} Nutzer</li>
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="muted small" style="margin-top:12px">Jährlich zahlen: 2 Monate gratis. Monatlich kündbar. Alle Tarife mit Eingangsadresse, Agent, Prüfung und DATEV-Export. Es zählen nur echte Rechnungen.</p>
+</section>
+
 <section class="block">
   <h2>Häufige Fragen</h2>
   <details class="faq"><summary>Was ist eine E-Rechnung genau?</summary>
@@ -154,12 +180,12 @@
   <details class="faq"><summary>Wo liegen meine Daten?</summary>
     <p>Auf Servern in Deutschland. Passwörter werden nur verschlüsselt gespeichert, jede Firma sieht nur ihre eigenen Rechnungen.</p></details>
   <details class="faq"><summary>Was kostet es?</summary>
-    <p>In der Startphase kannst du E-Rechnung Agent kostenlos nutzen. Das Prüfen einzelner E-Rechnungen bleibt immer kostenlos.</p></details>
+    <p>Du testest {{ trial_days }} Tage alle Funktionen kostenlos, ohne Kreditkarte. Danach ab 9 € im Monat – oder dauerhaft kostenlos im Tarif Free (5 Eingangsrechnungen im Monat). Das Prüfen einzelner E-Rechnungen ohne Konto bleibt immer kostenlos.</p></details>
 </section>
 
 <div class="final">
   <h2>Bereit für die E-Rechnung?</h2>
-  <p>In wenigen Minuten eingerichtet. Keine Installation, keine Kreditkarte.</p>
+  <p>In wenigen Minuten eingerichtet. {{ trial_days }} Tage kostenlos testen, keine Kreditkarte.</p>
   <div class="cta" style="justify-content:center">
     <a class="btn" href="/registrieren">Kostenlos starten</a>
     <a class="btn ghost" href="/pruefen">Erst eine Rechnung prüfen</a>

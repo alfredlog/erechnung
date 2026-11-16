@@ -23,7 +23,8 @@ router = APIRouter()
 def index(request: Request, user=Depends(optional_user)):
     if user:
         return RedirectResponse("/eingang", status_code=303)
-    return page(request, "landing.html", user, nav="start")
+    from app.services import billing
+    return page(request, "landing.html", user, nav="start", PLANS=billing.PLANS, trial_days=billing.TRIAL_DAYS)
 
 
 @router.get("/pruefen", response_class=HTMLResponse)

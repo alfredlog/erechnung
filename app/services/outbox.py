@@ -80,6 +80,9 @@ def queue(db: Session, org: Organization, row: InvoiceRow, user: User, to: str, 
     from app.services import jobs
     if not enabled():
         raise SendError("Der E-Mail-Versand ist auf diesem Server nicht eingerichtet.")
+    from app.services import billing
+    if not billing.effective_plan(db, org).send_mail:
+        raise SendError("Der E-Mail-Versand ist im Tarif Free nicht enthalten. Unter „Tarif“ kannst du upgraden.")
     if row.direction != "out" or row.organization_id != org.id:
         raise SendError("Nur eigene Ausgangsrechnungen können versendet werden.")
     to = to.strip()

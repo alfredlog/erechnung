@@ -9,7 +9,7 @@ from app.core.config import settings
 
 router = APIRouter()
 
-TERMS_VERSION = "2026-11-16"  # change when AGB/AVV change, so new acceptances can be told apart
+TERMS_VERSION = "2026-11-17"  # change when AGB/AVV change, so new acceptances can be told apart
 PAGES = {"impressum": "Impressum", "datenschutz": "Datenschutzerklärung", "agb": "Allgemeine Geschäftsbedingungen",
          "avv": "Vertrag zur Auftragsverarbeitung"}
 

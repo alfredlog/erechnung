@@ -21,15 +21,17 @@ from app.core.security import encrypt
 from app.core.tables import AuditLog, Export, Invoice, Organization, User
 from app.domain.export.datev import DatevSettings
 from app.domain.generate.draft import DraftParty, InvoiceDraft
-from app.services import agent, exports, inbound, invoicing, jobs, mail, outbox, storage
+from app.services import agent, billing, exports, inbound, invoicing, jobs, mail, outbox, storage
 
 router = APIRouter()
 
 STATUS = {"processing": ("info", "Wird geprüft"), "needs_review": ("warning", "Prüfen"),
           "approved": ("ok", "Freigegeben"), "exported": ("ok", "Exportiert"), "rejected": ("error", "Abgelehnt"),
-          "failed": ("error", "Fehler")}
-FILTERS = {"offen": ("processing", "needs_review"), "freigegeben": ("approved",), "exportiert": ("exported",),
-           "abgelehnt": ("rejected", "failed"), "alle": tuple(STATUS)}
+          "failed": ("error", "Fehler"), "limit": ("warning", "Limit erreicht"),
+          "not_invoice": ("info", "Keine Rechnung")}
+FILTERS = {"offen": ("processing", "needs_review", "limit"), "freigegeben": ("approved",),
+           "exportiert": ("exported",), "abgelehnt": ("rejected", "failed"), "keine": ("not_invoice",),
+           "alle": tuple(STATUS)}
 
 
 def _org(db: Session, user: User) -> Organization:
@@ -52,14 +54,15 @@ def inbox(request: Request, f: str = "offen", user: User = Depends(require_user)
     rows = list(db.scalars(base.where(Invoice.status.in_(statuses)).order_by(Invoice.created_at.desc()).limit(300)))
     counts = dict(db.execute(select(Invoice.status, func.count()).where(
         Invoice.organization_id == user.organization_id, Invoice.direction == "in").group_by(Invoice.status)).all())
-    stats = {"offen": counts.get("processing", 0) + counts.get("needs_review", 0),
+    stats = {"offen": counts.get("processing", 0) + counts.get("needs_review", 0) + counts.get("limit", 0),
              "freigegeben": counts.get("approved", 0), "exportiert": counts.get("exported", 0),
-             "abgelehnt": counts.get("rejected", 0) + counts.get("failed", 0)}
+             "abgelehnt": counts.get("rejected", 0) + counts.get("failed", 0),
+             "keine": counts.get("not_invoice", 0), "limit": counts.get("limit", 0)}
     org = _org(db, user)
     template = "_inbox_rows.html" if request.headers.get("HX-Request") else "eingang.html"
     return page(request, template, user, nav="eingang", rows=rows, stats=stats, f=f, STATUS=STATUS,
                 processing=counts.get("processing", 0), mailbox=(org.imap or {}).get("user"),
-                inbound_address=_inbound_address(db, org))
+                inbound_address=_inbound_address(db, org), usage=billing.usage(db, org))
 
 
 @router.post("/eingang/upload")
@@ -141,6 +144,27 @@ def approve(invoice_id: int, iban_confirmed: str = Form(""), user: User = Depend
     return RedirectResponse("/eingang?m=approved", 303)
 
 
+@router.post("/rechnung/{invoice_id}/keine-rechnung")
+def not_invoice(invoice_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)):
+    row = _invoice(db, user, invoice_id)
+    try:
+        agent.mark_not_invoice(db, row, user.id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    return RedirectResponse("/eingang?m=not_invoice", 303)
+
+
+@router.post("/rechnung/{invoice_id}/doch-rechnung")
+def is_invoice(invoice_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)):
+    row = _invoice(db, user, invoice_id)
+    try:
+        agent.mark_invoice(db, row, user.id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    jobs.run_pending_inline(db)
+    return RedirectResponse(f"/rechnung/{row.id}", 303)
+
+
 @router.post("/rechnung/{invoice_id}/ablehnen")
 def reject(invoice_id: int, reason: str = Form(""), user: User = Depends(require_user),
            db: Session = Depends(get_db)):
@@ -193,6 +217,10 @@ async def create_invoice(request: Request, format: str = "pdf", user: User = Dep
     missing = draft.missing_fields()
     if missing:
         return JSONResponse({"error": "Es fehlen noch Angaben.", "missing": missing}, status_code=422)
+    if not billing.outbound_allowed(db, org):
+        plan = billing.effective_plan(db, org)
+        return JSONResponse({"error": f"Im Tarif {plan.name} sind {plan.outbound} Rechnungen pro Monat enthalten. "
+                                      "Unter „Tarif“ kannst du upgraden.", "missing": []}, status_code=402)
     row, pdf, xml = invoicing.create_outgoing(db, org, draft, user.id)
     resp = file_response(draft, pdf, xml, format)
     resp.headers["X-Invoice-Id"] = str(row.id)

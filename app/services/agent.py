@@ -12,6 +12,7 @@ review with a concrete reason ("IBAN changed", "amount not found in document").
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 from decimal import Decimal
 
@@ -72,7 +73,26 @@ def receive(db: Session, org: Organization, filename: str, data: bytes, source: 
 
 
 # --------------------------------------------------------------------------- read
-def _read(data: bytes) -> tuple[Invoice | None, dict, str, bool | None, list[dict], str | None]:
+INVOICE_WORDS = re.compile(r"rechnung|invoice|faktura|gutschrift|credit\s*note", re.I)
+OTHER_DOCUMENTS = re.compile(r"\b(lieferschein|angebot|auftragsbest(ä|ae)tigung|kostenvoranschlag|"
+                             r"allgemeine\s+gesch(ä|ae)ftsbedingungen|newsletter|datenschutzerkl(ä|ae)rung)\b", re.I)
+NOT_INVOICE = "not_invoice"
+
+
+def looks_like_invoice(text: str, inv: Invoice) -> bool:
+    """False only when we are sure: no invoice wording at all, and either no invoice data either
+    or the document says what else it is (delivery note, quote, terms …). In doubt: invoice."""
+    if INVOICE_WORDS.search(text):
+        return True
+    has_data = bool(inv.number) or any(v is not None for v in (inv.totals.gross_total, inv.totals.amount_due,
+                                                               inv.totals.net_total))
+    return has_data and not OTHER_DOCUMENTS.search(text[:600])
+
+
+ReadResult = tuple[Invoice | None, dict, str, bool | None, list[dict], str | None]
+
+
+def _read(data: bytes, use_llm: bool = True, classify: bool = True) -> ReadResult:
     """Returns (invoice, confidence, method, kosit_ok, kosit_findings, error)."""
     fmt = detect_format(data)
     if fmt in (SourceFormat.UBL, SourceFormat.CII, SourceFormat.ZUGFERD_PDF):
@@ -96,7 +116,7 @@ def _read(data: bytes) -> tuple[Invoice | None, dict, str, bool | None, list[dic
             return None, {}, f"text:{text.method}", None, [], "Kein Text lesbar (leere Seite oder schlechte Qualität)."
         method = "rules"
         inv = None
-        if settings.llm_enabled:
+        if settings.llm_enabled and use_llm:
             try:
                 inv = extract_llm(text.text, base_url=settings.llm_base_url, api_key=settings.llm_api_key,
                                   model=settings.llm_model)
@@ -105,6 +125,8 @@ def _read(data: bytes) -> tuple[Invoice | None, dict, str, bool | None, list[dic
                 log.warning("LLM extraction failed, falling back to rules: %s", exc)
         if inv is None:
             inv = extract_heuristic(text.text)
+        if classify and not looks_like_invoice(text.text, inv):
+            return inv, {}, NOT_INVOICE, None, [], None
         rules = {f.code for f in check_invoice(inv) if f.severity == Severity.ERROR}
         return inv, field_confidence(inv, text.text, rules), f"{method}+{text.method}", None, [], None
 
@@ -137,10 +159,28 @@ def find_supplier(db: Session, org_id: int, inv: Invoice) -> Supplier | None:
 
 
 # --------------------------------------------------------------------------- decide
-def process(db: Session, row: InvoiceRow) -> InvoiceRow:
+def process(db: Session, row: InvoiceRow, force_invoice: bool = False) -> InvoiceRow:
+    from app.services import billing
     org = db.get(Organization, row.organization_id)
+    if not billing.inbound_allowed(db, org):  # kept, processed as soon as there is room again
+        row.status = "limit"
+        row.review_reasons = ["Monatslimit deines Tarifs erreicht. Die Rechnung ist sicher gespeichert und wird "
+                              "verarbeitet, sobald du upgradest oder der neue Monat beginnt."]
+        audit.log(db, org.id, "limit_reached", invoice_id=row.id)
+        db.commit()
+        return row
     data = storage.load(org.id, row.document.sha256)
-    inv, conf, method, kosit_ok, kosit_findings, error = _read(data)
+    inv, conf, method, kosit_ok, kosit_findings, error = _read(data, use_llm=billing.effective_plan(db, org).ai,
+                                                                 classify=not force_invoice)
+
+    if method == NOT_INVOICE:
+        row.status = NOT_INVOICE
+        row.review_reasons = ["Sieht nicht wie eine Rechnung aus (z. B. Lieferschein, Angebot, AGB). "
+                              "Zählt nicht für dein Monatslimit. Falls doch: „Doch eine Rechnung“ wählen."]
+        row.confidence = {"_method": method}
+        audit.log(db, org.id, "processed", invoice_id=row.id, method=method, status=row.status)
+        db.commit()
+        return row
 
     reasons: list[str] = []
     if error or inv is None:
@@ -178,7 +218,8 @@ def process(db: Session, row: InvoiceRow) -> InvoiceRow:
         # invoice again, e.g. sent by e-mail and then as paper scan. Names from OCR vary, amounts do not.
         same_number = select(InvoiceRow).where(
             InvoiceRow.organization_id == org.id, InvoiceRow.id != row.id, InvoiceRow.number == inv.number,
-            InvoiceRow.direction == "in", InvoiceRow.status.not_in(("rejected", "failed", "processing")))
+            InvoiceRow.direction == "in",
+            InvoiceRow.status.not_in(("rejected", "failed", "processing", NOT_INVOICE, "limit")))
         amount = inv.totals.amount_due if inv.totals.amount_due is not None else inv.totals.gross_total
         dup = next((d for d in db.scalars(same_number)
                     if (supplier and d.supplier_id == supplier.id) or d.partner_name == inv.seller.name
@@ -329,3 +370,24 @@ def correct(db: Session, row: InvoiceRow, user_id: int, changes: dict[str, str])
         _store(row, inv, row.supplier)
         db.commit()
     return changed
+
+
+def mark_not_invoice(db: Session, row: InvoiceRow, user_id: int) -> None:
+    if row.direction != "in" or row.status in ("exported", "processing"):
+        raise ValueError("Diese Rechnung kann nicht mehr als „Keine Rechnung“ markiert werden.")
+    old = row.status
+    row.status = NOT_INVOICE
+    row.review_reasons = ["Von dir als „Keine Rechnung“ markiert. Zählt nicht für dein Monatslimit."]
+    audit.log(db, row.organization_id, "marked_not_invoice", user_id=user_id, invoice_id=row.id, old=old)
+    db.commit()
+
+
+def mark_invoice(db: Session, row: InvoiceRow, user_id: int) -> None:
+    """The agent thought it was no invoice, the user says it is: process it again."""
+    from app.services import jobs
+    if row.status != NOT_INVOICE:
+        raise ValueError("Nur Dokumente unter „Keine Rechnung“ können zurückgeholt werden.")
+    row.status, row.review_reasons = "processing", []
+    audit.log(db, row.organization_id, "marked_invoice", user_id=user_id, invoice_id=row.id)
+    jobs.enqueue(db, row.organization_id, "process_invoice", {"invoice_id": row.id, "force_invoice": True})
+    db.commit()
