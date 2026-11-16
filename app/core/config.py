@@ -53,6 +53,8 @@ class Settings:
     operator_phone: str = field(default_factory=lambda: _env("OPERATOR_PHONE"))
     operator_small_business: bool = field(default_factory=lambda: _flag("OPERATOR_SMALL_BUSINESS", True))
 
+    # Shared secret for the detailed health check used by scripts/monitor.py
+    monitor_token: str = field(default_factory=lambda: _env("MONITOR_TOKEN"))
     # Stripe (sk_test_… for testing, sk_live_… for real payments). Empty = plans are not enforced.
     stripe_secret_key: str = field(default_factory=lambda: _env("STRIPE_SECRET_KEY"))
     stripe_webhook_secret: str = field(default_factory=lambda: _env("STRIPE_WEBHOOK_SECRET"))

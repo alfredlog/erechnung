@@ -57,6 +57,9 @@ def main() -> None:
                 billing.release_all(db)  # invoices held by the monthly limit, once there is room
                 from app.services import notify
                 notify.run_due(db)       # daily digest at 8:00, trial reminders
+                beat = settings.data_dir / ".heartbeat-worker"  # the monitor checks the worker is alive
+                beat.parent.mkdir(parents=True, exist_ok=True)
+                beat.write_text(str(int(time.time())))
                 last_schedule = time.monotonic()
             job = jobs.claim(db)
             if job:

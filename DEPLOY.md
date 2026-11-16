@@ -96,7 +96,27 @@ webhook (new secret). Test cards: 4242 4242 4242 4242, any future date, any CVC.
 - App: the site is installable (manifest, service worker at /sw.js). Needs HTTPS. On Android it also
   appears in the share menu. Help page for customers: /app.
 
-## 8. Backups (daily)
+## 8. Monitoring
+
+`scripts/monitor.py` runs on the host every 5 minutes and e-mails `ALERT_EMAIL` when something is
+wrong (after 2 failed runs in a row), every 6 hours while it stays broken, and when it works again.
+It checks the containers, the website through Caddy, database/worker/job queue, a real XRechnung
+through the whole check (incl. KoSIT), mail receiving on port 25, the certificate, disk/memory and
+the nightly backup.
+
+```bash
+# .env: ALERT_EMAIL=you@example.com  MONITOR_TOKEN=$(openssl rand -hex 24)
+docker compose up -d api                       # api reads MONITOR_TOKEN
+python3 scripts/monitor.py --test-mail         # does the alert mail arrive?
+python3 scripts/monitor.py --report            # all checks, now
+crontab -e
+*/5 * * * * cd ~/apps/erechnung && python3 scripts/monitor.py >> ~/monitor.log 2>&1
+```
+
+If the whole server is down, this script cannot send anything: add a free external check
+(e.g. UptimeRobot, HTTP monitor on https://erechnungagent.de/health every 5 minutes).
+
+## 9. Backups (daily)
 
 ```bash
 mkdir -p ~/backups/erechnung
@@ -107,13 +127,13 @@ crontab -e
 
 Copy the backups regularly to a second place (e.g. netcup storage or your laptop).
 
-## 9. Update
+## 10. Update
 
 ```bash
 cd ~/apps/erechnung && git pull && docker compose up -d --build
 ```
 
-## 10. PDF Libre tools
+## 11. PDF Libre tools
 
 PDF Libre's `.env`: `ERECHNUNG_API_URL=http://127.0.0.1:8100`. The tools "XRechnung anzeigen"
 and "E-Rechnung prüfen" call `POST /api/v1/render`.

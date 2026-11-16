@@ -1,6 +1,7 @@
 """FastAPI entry point: public tools, accounts, and the workspace of logged-in companies."""
 from __future__ import annotations
 
+import hmac
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -50,5 +51,41 @@ async def security_headers(request: Request, call_next):
 
 
 @app.get("/health")
-def health() -> dict:
-    return {"status": "ok", "kosit_configured": bool(settings.kosit_url), "llm_configured": settings.llm_enabled}
+def health(request: Request) -> dict:
+    out = {"status": "ok", "kosit_configured": bool(settings.kosit_url), "llm_configured": settings.llm_enabled}
+    token = request.headers.get("x-monitor-token", "")
+    if settings.monitor_token and hmac.compare_digest(token, settings.monitor_token):
+        out.update(_deep_health())  # details only for the monitoring script
+    return out
+
+
+def _deep_health() -> dict:
+    import time
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import func, select
+
+    from app.core.db import SessionLocal
+    from app.core.tables import Job
+    info: dict = {}
+    try:
+        with SessionLocal() as db:
+            # jobs that should already have run (retries wait on purpose, so count from run_after)
+            oldest = db.scalar(select(func.min(Job.run_after)).where(Job.status == "queued",
+                                                                     Job.run_after <= datetime.now(UTC)))
+            info["db"] = "ok"
+            if oldest is not None:
+                oldest = oldest if oldest.tzinfo else oldest.replace(tzinfo=UTC)
+                info["oldest_pending_job_minutes"] = round((datetime.now(UTC) - oldest).total_seconds() / 60, 1)
+            else:
+                info["oldest_pending_job_minutes"] = 0
+            info["failed_jobs_24h"] = db.scalar(select(func.count()).select_from(Job).where(
+                Job.status == "failed", Job.created_at >= datetime.now(UTC) - timedelta(days=1))) or 0
+    except Exception as exc:  # noqa: BLE001
+        info["db"] = f"error: {type(exc).__name__}"
+    beat = settings.data_dir / ".heartbeat-worker"
+    try:
+        info["worker_seconds_ago"] = int(time.time() - int(beat.read_text().strip()))
+    except (OSError, ValueError):
+        info["worker_seconds_ago"] = None
+    return info
