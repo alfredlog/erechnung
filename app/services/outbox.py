@@ -181,6 +181,19 @@ def send(db: Session, mail_id: int, connect=_smtp) -> None:
     db.commit()
 
 
+def send_system(to: str, subject: str, body: str, connect=None) -> None:
+    """A message from the service itself (e.g. password reset). Raises on failure."""
+    msg = EmailMessage()
+    msg["From"] = formataddr((settings.app_name, settings.mail_from))
+    msg["To"] = to
+    msg["Subject"] = " ".join(subject.split())
+    msg["Date"] = formatdate(localtime=True)
+    msg["Message-ID"] = make_msgid(domain=settings.mail_from.rpartition("@")[2] or None)
+    msg.set_content(body)
+    with (connect or _smtp)() as conn:
+        conn.send_message(msg, from_addr=settings.mail_from, to_addrs=[to])
+
+
 def mark_failed(db: Session, mail: OutgoingMail, error: str) -> None:
     mail.status, mail.error = "failed", error[:2000]
     audit.log(db, mail.organization_id, "mail_failed", invoice_id=mail.invoice_id, to=mail.recipient,

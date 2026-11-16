@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block head %}
+<style>
+  .legal h1 { margin-bottom:4px; } .legal h2 { font-size:19px; margin:28px 0 8px; } .legal h3 { font-size:16px; margin:18px 0 6px; }
+  .legal p, .legal li { color:#2b3444; } .legal ol, .legal ul { padding-left:22px; } .legal li { margin:4px 0; }
+  .legal .stand { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  .legal .missing { background:var(--warn-bg); color:var(--warn); padding:10px 14px; border-radius:8px; font-weight:600; }
+</style>
+{% endblock %}
+{% block content %}
+<article class="legal card">
+  {% if not op.complete %}<p class="missing">Die Angaben zum Betreiber sind noch nicht vollständig eingetragen.</p>{% endif %}
+  {% block legal %}{% endblock %}
+</article>
+{% endblock %}

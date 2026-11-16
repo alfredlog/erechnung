@@ -108,7 +108,7 @@ def test_smtp_server_accepts_known_and_refuses_unknown(org, draft):
 def test_inbound_page_shows_address_and_notices(org):
     c = TestClient(app)
     email = f"{uuid.uuid4().hex[:8]}@x.de"
-    c.post("/registrieren", data={"company": "Seite GmbH", "email": email, "password": "geheim12345!"})
+    c.post("/registrieren", data={"accept": "on", "company": "Seite GmbH", "email": email, "password": "geheim12345!"})
     page = c.get("/eingangsadresse")
     assert page.status_code == 200 and "@" + DOMAIN in page.text and "Gmail" in page.text
     assert "@" + DOMAIN in c.get("/eingang").text
@@ -158,7 +158,7 @@ def test_readable_address_and_rename_keeps_old_one():
 
 def test_rename_from_page():
     c = TestClient(app)
-    c.post("/registrieren", data={"company": "Umbenenn GmbH", "email": f"{uuid.uuid4().hex[:8]}@x.de",
+    c.post("/registrieren", data={"accept": "on", "company": "Umbenenn GmbH", "email": f"{uuid.uuid4().hex[:8]}@x.de",
                                   "password": "geheim12345!"})
     want = "rechnung-" + uuid.uuid4().hex[:6]
     r = c.post("/eingangsadresse/aendern", data={"local_part": want}, follow_redirects=False)

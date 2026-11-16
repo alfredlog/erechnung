@@ -28,6 +28,7 @@ FLASH = {
     "nothing": ("info", "Keine freigegebenen Rechnungen zum Exportieren."),
     "created": ("ok", "Rechnung erstellt und archiviert."),
     "imap_ok": ("ok", "Verbindung zum Postfach erfolgreich."),
+    "password_reset": ("ok", "Neues Passwort gespeichert. Bitte melde dich jetzt an."),
     "address_changed": ("ok", "Neue Eingangsadresse gespeichert. Die alte funktioniert weiterhin."),
     "mail_queued": ("ok", "E-Mail wird versendet. Der Status erscheint unten bei „Versand“."),
 }

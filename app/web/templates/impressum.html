@@ -1,0 +1,24 @@
+{% extends "_legal_base.html" %}
+{% block legal %}
+<h1>Impressum</h1>
+<p class="stand">Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG)</p>
+
+<p>{{ op.name }}<br>{{ op.street }}<br>{{ op.city }}<br>Deutschland</p>
+
+<h2>Kontakt</h2>
+<p>E-Mail: <a href="mailto:{{ op.email }}">{{ op.email }}</a>{% if op.phone %}<br>Telefon: {{ op.phone }}{% endif %}</p>
+
+{% if op.small_business %}
+<h2>Umsatzsteuer</h2>
+<p>Kleinunternehmer gemäß § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen.</p>
+{% endif %}
+
+<h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+<p>{{ op.name }}, Anschrift wie oben.</p>
+
+<h2>Verbraucherstreitbeilegung</h2>
+<p>{{ product }} richtet sich ausschließlich an Unternehmen. Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+
+<h2>Haftung für Inhalte und Links</h2>
+<p>Die Inhalte dieser Seiten wurden mit Sorgfalt erstellt. Die Informationen zur E-Rechnung ersetzen keine steuerliche oder rechtliche Beratung. Für Inhalte externer Seiten, auf die wir verlinken, sind ausschließlich deren Betreiber verantwortlich; bei Bekanntwerden von Rechtsverstößen entfernen wir solche Links umgehend.</p>
+{% endblock %}

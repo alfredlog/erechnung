@@ -1,0 +1,41 @@
+{% extends "_legal_base.html" %}
+{% block legal %}
+<h1>Datenschutzerklärung</h1>
+<p class="stand">Stand: {{ version[8:10] }}.{{ version[5:7] }}.{{ version[:4] }}</p>
+
+<h2>1. Verantwortlicher</h2>
+<p>{{ op.name }}, {{ op.street }}, {{ op.city }}, E-Mail: <a href="mailto:{{ op.email }}">{{ op.email }}</a></p>
+
+<h2>2. Überblick</h2>
+<p>Wir verarbeiten personenbezogene Daten nur, soweit es für den Betrieb von {{ product }} nötig ist. Wir setzen keine Analyse- oder Werbe-Tracker ein, laden keine Schriften oder Skripte von fremden Servern und verkaufen keine Daten.</p>
+
+<h2>3. Aufruf der Website</h2>
+<p>Beim Aufruf verarbeitet unser Server technisch notwendige Daten (IP-Adresse, Zeitpunkt, aufgerufene Seite, Browser-Kennung), um die Seite auszuliefern und Angriffe abzuwehren. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren Betrieb). Diese Daten werden nicht mit anderen Daten zusammengeführt und nur kurzzeitig gespeichert.</p>
+
+<h2>4. Cookies</h2>
+<p>Wir verwenden ausschließlich ein technisch notwendiges Cookie, das Sie nach der Anmeldung angemeldet hält (§ 25 Abs. 2 TDDDG). Es enthält eine zufällige Sitzungskennung und wird bei der Abmeldung bzw. nach spätestens 30 Tagen ungültig. Eine Einwilligung ist dafür nicht erforderlich.</p>
+
+<h2>5. Kostenlose Prüfung ohne Konto</h2>
+<p>Wenn Sie unter „Prüfen“ eine Rechnung hochladen, wird sie nur zur Anzeige und Prüfung verarbeitet und nicht dauerhaft gespeichert.</p>
+
+<h2>6. Kundenkonto</h2>
+<p>Für ein Konto verarbeiten wir Firmenname, E-Mail-Adresse und ein Passwort (nur als sicherer Hash gespeichert) sowie die Angaben, die Sie in den Einstellungen hinterlegen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertrag). Zu Ihrer und unserer Sicherheit protokollieren wir wichtige Aktionen im Konto (z. B. Freigaben, Änderungen, Exporte).</p>
+
+<h2>7. Rechnungen und Daten Ihrer Geschäftspartner</h2>
+<p>Rechnungen, die Sie hochladen, per E-Mail an Ihre Eingangsadresse senden oder mit {{ product }} erstellen, enthalten oft personenbezogene Daten Ihrer Geschäftspartner (z. B. Namen, Anschriften, Bankverbindungen). Diese Daten verarbeiten wir in Ihrem Auftrag nach Art. 28 DSGVO. Die Einzelheiten regelt der <a href="/avv">Vertrag zur Auftragsverarbeitung</a>.</p>
+
+<h2>8. Empfänger und Dienstleister</h2>
+<ul>
+  <li><b>Hosting:</b> netcup GmbH, Karlsruhe, Deutschland. Alle Daten liegen auf Servern in Deutschland.</li>
+  {% if sending %}<li><b>E-Mail-Versand:</b> IONOS SE, Montabaur, Deutschland – für E-Mails, die Sie über {{ product }} versenden (z. B. Ausgangsrechnungen), und für Systemnachrichten wie das Zurücksetzen des Passworts.</li>{% endif %}
+  {% if llm %}<li><b>KI-gestütztes Auslesen:</b> Mistral AI, Paris, Frankreich (EU) – nur der Text von Rechnungen ohne strukturierte Daten (PDF, Scan) wird zur Erkennung der Rechnungsfelder übermittelt.</li>{% endif %}
+</ul>
+<p>Mit allen Dienstleistern bestehen Verträge zur Auftragsverarbeitung. Eine Übermittlung in Länder außerhalb der EU findet nicht statt.</p>
+
+<h2>9. Speicherdauer</h2>
+<p>Kontodaten speichern wir, solange das Konto besteht. Nach Kündigung werden Ihre Daten innerhalb von 30 Tagen gelöscht, soweit keine gesetzlichen Aufbewahrungspflichten entgegenstehen. Unsere eigenen Rechnungen an Sie bewahren wir nach § 147 AO und § 257 HGB auf (Art. 6 Abs. 1 lit. c DSGVO).</p>
+
+<h2>10. Ihre Rechte</h2>
+<p>Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21 DSGVO). Schreiben Sie uns dazu an <a href="mailto:{{ op.email }}">{{ op.email }}</a>.</p>
+<p>Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. beim Hessischen Beauftragten für Datenschutz und Informationsfreiheit.</p>
+{% endblock %}

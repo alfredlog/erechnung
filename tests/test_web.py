@@ -16,7 +16,7 @@ _n = iter(range(10_000))
 
 def new_client(company="Bäckerei Schön KG") -> TestClient:
     c = TestClient(app)
-    r = c.post("/registrieren", data={"company": company, "email": f"web{next(_n)}@test.de",
+    r = c.post("/registrieren", data={"accept": "on", "company": company, "email": f"web{next(_n)}@test.de",
                                       "password": "geheim-genug-123"}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].startswith("/einstellungen")
     return c

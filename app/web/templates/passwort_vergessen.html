@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Passwort vergessen – {{ app_name }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<div class="card" style="max-width:440px;margin:30px auto">
+  <h1>Passwort vergessen</h1>
+  {% if sent %}
+    <div class="flash ok">Wenn es ein Konto mit dieser E-Mail-Adresse gibt, haben wir dir einen Link geschickt. Schau auch im Spam-Ordner nach.</div>
+    <p class="muted small">Der Link ist 60 Minuten gültig.</p>
+  {% elif not sending %}
+    <p class="muted">Bitte schreib uns{% if support %} an <a href="mailto:{{ support }}">{{ support }}</a>{% endif %}, dann helfen wir dir weiter.</p>
+  {% else %}
+    <p class="muted">Gib die E-Mail-Adresse deines Kontos ein. Wir schicken dir einen Link, mit dem du ein neues Passwort festlegen kannst.</p>
+    <form method="post" action="/passwort-vergessen">
+      <label for="email">E-Mail</label><input id="email" type="email" name="email" required autocomplete="email">
+      <button style="margin-top:18px;width:100%">Link anfordern</button>
+    </form>
+  {% endif %}
+  <p class="muted small" style="margin-top:16px"><a href="/anmelden">Zurück zur Anmeldung</a></p>
+</div>
+{% endblock %}

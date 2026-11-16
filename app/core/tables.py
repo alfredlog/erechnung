@@ -224,3 +224,13 @@ class InboundFormerAddress(Base):
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
     local_part: Mapped[str] = mapped_column(String(64), unique=True)
     replaced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class PasswordReset(Base):
+    """One-time link to set a new password. Only the hash of the token is stored."""
+    __tablename__ = "password_resets"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

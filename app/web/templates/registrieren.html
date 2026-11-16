@@ -10,6 +10,10 @@
     <label for="company">Firma</label><input id="company" type="text" name="company" value="{{ company or '' }}" required autocomplete="organization">
     <label for="email" style="margin-top:12px">E-Mail</label><input id="email" type="email" name="email" value="{{ email or '' }}" required autocomplete="email">
     <label for="password" style="margin-top:12px">Passwort (mind. 10 Zeichen)</label><input id="password" type="password" name="password" minlength="10" required autocomplete="new-password">
+    <label style="display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);margin-top:14px">
+      <input type="checkbox" name="accept" required style="margin-top:4px">
+      <span class="small">Ich akzeptiere die <a href="/agb" target="_blank">AGB</a> und den <a href="/avv" target="_blank">Vertrag zur Auftragsverarbeitung</a> und habe die <a href="/datenschutz" target="_blank">Datenschutzerklärung</a> gelesen. Ich nutze {{ app_name }} als Unternehmer.</span>
+    </label>
     <button style="margin-top:18px;width:100%">Konto anlegen</button>
   </form>
   <p class="muted small" style="margin-top:16px">Schon registriert? <a href="/anmelden">Anmelden</a></p>

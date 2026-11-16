@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Neues Passwort – {{ app_name }}{% endblock %}
+{% block head %}<meta name="referrer" content="no-referrer">{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<div class="card" style="max-width:440px;margin:30px auto">
+  <h1>Neues Passwort</h1>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  {% if valid %}
+  <form method="post" action="/passwort-neu">
+    <input type="hidden" name="token" value="{{ token }}">
+    <label for="password">Neues Passwort (mind. 10 Zeichen)</label><input id="password" type="password" name="password" minlength="10" required autocomplete="new-password">
+    <label for="password2" style="margin-top:12px">Wiederholen</label><input id="password2" type="password" name="password2" minlength="10" required autocomplete="new-password">
+    <button style="margin-top:18px;width:100%">Passwort speichern</button>
+  </form>
+  <p class="muted small" style="margin-top:12px">Danach wirst du auf allen Geräten abgemeldet.</p>
+  {% else %}
+  <p class="muted">Dieser Link ist ungültig oder abgelaufen.</p>
+  <a class="btn" href="/passwort-vergessen">Neuen Link anfordern</a>
+  {% endif %}
+</div>
+{% endblock %}

@@ -18,7 +18,7 @@ class AccountError(ValueError):
     pass
 
 
-def register(db: Session, company: str, email: str, password: str) -> User:
+def register(db: Session, company: str, email: str, password: str, terms_version: str | None = None) -> User:
     email = email.strip().lower()
     if not company.strip():
         raise AccountError("Bitte den Firmennamen angeben.")
@@ -35,6 +35,8 @@ def register(db: Session, company: str, email: str, password: str) -> User:
     db.add(user)
     db.flush()
     audit.log(db, org.id, "account_created", user_id=user.id)
+    if terms_version:  # proof that AGB + AVV were accepted, with the version
+        audit.log(db, org.id, "terms_accepted", user_id=user.id, agb=terms_version, avv=terms_version)
     db.commit()
     return user
 
@@ -71,3 +73,56 @@ def end_session(db: Session, token: str | None) -> None:
     if token:
         db.execute(delete(SessionToken).where(SessionToken.token_hash == hash_token(token)))
         db.commit()
+
+
+# ------------------------------------------------------------------ password reset
+RESET_MINUTES = 60
+MAX_RESETS_PER_HOUR = 3
+
+
+def _aware(value: datetime) -> datetime:
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
+
+
+def request_reset(db: Session, email: str) -> tuple[User, str] | None:
+    """Creates a one-time token for the account, or None (unknown e-mail or too many requests)."""
+    from app.core.tables import PasswordReset
+    user = db.scalar(select(User).where(func.lower(User.email) == email.strip().lower()))
+    if user is None:
+        return None
+    since = datetime.now(UTC) - timedelta(hours=1)
+    recent = db.scalar(select(func.count()).select_from(PasswordReset).where(
+        PasswordReset.user_id == user.id, PasswordReset.created_at >= since)) or 0
+    if recent >= MAX_RESETS_PER_HOUR:
+        return None
+    token = new_token()
+    db.add(PasswordReset(token_hash=hash_token(token), user_id=user.id,
+                         expires_at=datetime.now(UTC) + timedelta(minutes=RESET_MINUTES)))
+    audit.log(db, user.organization_id, "password_reset_requested", user_id=user.id)
+    db.commit()
+    return user, token
+
+
+def valid_reset(db: Session, token: str):
+    from app.core.tables import PasswordReset
+    if not token:
+        return None
+    row = db.get(PasswordReset, hash_token(token))
+    if row is None or row.used_at is not None or _aware(row.expires_at) < datetime.now(UTC):
+        return None
+    return row
+
+
+def reset_password(db: Session, token: str, password: str) -> User:
+    row = valid_reset(db, token)
+    if row is None:
+        raise AccountError("Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.")
+    if len(password) < 10:
+        raise AccountError("Das Passwort muss mindestens 10 Zeichen lang sein.")
+    user = db.get(User, row.user_id)
+    user.password_hash = hash_password(password)
+    row.used_at = datetime.now(UTC)
+    db.execute(delete(SessionToken).where(SessionToken.user_id == user.id))  # log out everywhere
+    audit.log(db, user.organization_id, "password_reset", user_id=user.id)
+    db.commit()
+    return user

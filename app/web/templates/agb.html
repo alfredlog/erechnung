@@ -1,0 +1,71 @@
+{% extends "_legal_base.html" %}
+{% block legal %}
+<h1>Allgemeine Geschäftsbedingungen</h1>
+<p class="stand">Stand: {{ version[8:10] }}.{{ version[5:7] }}.{{ version[:4] }} · Anbieter: {{ op.name }}, {{ op.street }}, {{ op.city }}</p>
+
+<h2>§ 1 Geltungsbereich</h2>
+<ol>
+  <li>Diese AGB gelten für die Nutzung von {{ product }} ({{ base_url }}) durch den Kunden.</li>
+  <li>Das Angebot richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB, juristische Personen des öffentlichen Rechts und öffentlich-rechtliche Sondervermögen – nicht an Verbraucher.</li>
+  <li>Abweichende Bedingungen des Kunden gelten nur, wenn wir ihnen ausdrücklich in Textform zustimmen.</li>
+</ol>
+
+<h2>§ 2 Leistungen</h2>
+<ol>
+  <li>{{ product }} ist eine Software im Browser, mit der der Kunde Rechnungen empfangen, auslesen, prüfen, erstellen, versenden, archivieren und an seine Buchhaltung (z. B. im DATEV-Format) übergeben kann. Der jeweils aktuelle Funktionsumfang ergibt sich aus der Beschreibung auf der Website.</li>
+  <li>Die Software prüft Rechnungen automatisch gegen Rechenregeln, Pflichtangaben und die offiziellen Regeln für E-Rechnungen. Diese Prüfung ist eine Hilfe, aber keine steuerliche oder rechtliche Beratung. Der Kunde bleibt dafür verantwortlich, freigegebene Rechnungen, Zahlungen und Buchungen zu kontrollieren.</li>
+  <li>Automatische Freigaben erfolgen nur nach den in der Software beschriebenen Regeln und können in den Einstellungen abgeschaltet werden. Die Software führt keine Zahlungen aus.</li>
+  <li>Wir entwickeln die Software laufend weiter und dürfen Funktionen ändern, soweit der vertragliche Kern der Leistung erhalten bleibt und dies für den Kunden zumutbar ist.</li>
+</ol>
+
+<h2>§ 3 Vertragsschluss und Konto</h2>
+<ol>
+  <li>Der Vertrag kommt mit der Registrierung zustande. Der Kunde stellt sicher, dass seine Angaben richtig sind.</li>
+  <li>Zugangsdaten sind geheim zu halten. Der Kunde informiert uns unverzüglich, wenn er einen Missbrauch vermutet.</li>
+</ol>
+
+<h2>§ 4 Preise</h2>
+<ol>
+  <li>In der Startphase ist die Nutzung kostenlos. Kostenpflichtige Tarife kündigen wir mindestens 30 Tage vorher in Textform an; der Kunde kann dann entscheiden, ob er einen Tarif wählt oder den Vertrag beendet.</li>
+  <li>Die kostenlose Prüfung einzelner E-Rechnungen ohne Konto bleibt unentgeltlich.</li>
+  {% if op.small_business %}<li>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</li>{% endif %}
+</ol>
+
+<h2>§ 5 Pflichten des Kunden</h2>
+<ol>
+  <li>Der Kunde verwendet {{ product }} nur für eigene geschäftliche Zwecke und nicht für rechtswidrige Inhalte, Spam oder das Versenden von E-Mails an Empfänger, die damit nicht rechnen müssen.</li>
+  <li>Der Kunde bleibt für die Erfüllung seiner steuerlichen und handelsrechtlichen Pflichten verantwortlich, insbesondere für die Aufbewahrung von Rechnungen (GoBD). Er exportiert seine Daten rechtzeitig vor Vertragsende.</li>
+</ol>
+
+<h2>§ 6 Verfügbarkeit und Daten</h2>
+<ol>
+  <li>Wir bemühen uns um eine hohe Verfügbarkeit, schulden aber keine bestimmte Verfügbarkeit. Wartungsarbeiten führen wir nach Möglichkeit zu nutzungsarmen Zeiten durch.</li>
+  <li>Wir sichern die Daten regelmäßig. Originaldateien werden unverändert gespeichert.</li>
+  <li>Die Verarbeitung personenbezogener Daten im Auftrag des Kunden regelt der <a href="/avv">Vertrag zur Auftragsverarbeitung</a>, der Bestandteil dieses Vertrags ist.</li>
+</ol>
+
+<h2>§ 7 Haftung</h2>
+<ol>
+  <li>Wir haften unbeschränkt bei Vorsatz und grober Fahrlässigkeit, bei Verletzung von Leben, Körper oder Gesundheit sowie nach dem Produkthaftungsgesetz.</li>
+  <li>Bei leichter Fahrlässigkeit haften wir nur bei Verletzung einer wesentlichen Vertragspflicht (deren Erfüllung die ordnungsgemäße Durchführung des Vertrags überhaupt erst ermöglicht und auf deren Einhaltung der Kunde regelmäßig vertrauen darf), begrenzt auf den vertragstypischen, vorhersehbaren Schaden.</li>
+  <li>Während der kostenlosen Nutzung haften wir – außer in den Fällen von Absatz 1 – nur für Vorsatz und grobe Fahrlässigkeit.</li>
+  <li>Für den Verlust von Daten haften wir nur in Höhe des Aufwands, der bei regelmäßiger Datensicherung durch den Kunden (Export) zur Wiederherstellung erforderlich wäre.</li>
+</ol>
+
+<h2>§ 8 Laufzeit und Kündigung</h2>
+<ol>
+  <li>Der Vertrag läuft auf unbestimmte Zeit. Während der kostenlosen Nutzung können beide Seiten jederzeit kündigen, für kostenpflichtige Tarife gelten die dort genannten Fristen.</li>
+  <li>Das Recht zur fristlosen Kündigung aus wichtigem Grund bleibt unberührt, insbesondere bei Missbrauch nach § 5 Abs. 1.</li>
+  <li>Nach Vertragsende kann der Kunde seine Daten noch 30 Tage exportieren; danach werden sie gelöscht.</li>
+</ol>
+
+<h2>§ 9 Änderungen dieser AGB</h2>
+<p>Änderungen teilen wir dem Kunden mindestens 30 Tage vor Inkrafttreten in Textform mit. Widerspricht der Kunde nicht innerhalb dieser Frist, gelten sie als angenommen; auf diese Folge weisen wir in der Mitteilung hin. Bei Widerspruch kann jede Seite den Vertrag zum Inkrafttreten der Änderung kündigen.</p>
+
+<h2>§ 10 Schlussbestimmungen</h2>
+<ol>
+  <li>Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts.</li>
+  <li>Ist der Kunde Kaufmann, juristische Person des öffentlichen Rechts oder öffentlich-rechtliches Sondervermögen, ist Gerichtsstand der Sitz des Anbieters.</li>
+  <li>Sollte eine Bestimmung unwirksam sein, bleibt der Vertrag im Übrigen wirksam.</li>
+</ol>
+{% endblock %}

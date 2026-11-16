@@ -1,0 +1,57 @@
+{% extends "_legal_base.html" %}
+{% block legal %}
+<h1>Vertrag zur Auftragsverarbeitung (AVV)</h1>
+<p class="stand">nach Art. 28 DSGVO · Stand: {{ version[8:10] }}.{{ version[5:7] }}.{{ version[:4] }}</p>
+
+<p>zwischen dem Kunden von {{ product }} (<b>Verantwortlicher</b>, „Auftraggeber“) und {{ op.name }}, {{ op.street }}, {{ op.city }} (<b>Auftragsverarbeiter</b>, „Auftragnehmer“). Der Vertrag wird bei der Registrierung elektronisch geschlossen (Art. 28 Abs. 9 DSGVO) und gilt für die gesamte Dauer der Nutzung.</p>
+
+<h2>1. Gegenstand, Art und Zweck</h2>
+<p>Der Auftragnehmer verarbeitet personenbezogene Daten für den Auftraggeber, um die in den <a href="/agb">AGB</a> beschriebenen Leistungen zu erbringen: Empfang, Auslesen, Prüfung, Erstellung, Versand, Archivierung und Export von Rechnungen.</p>
+
+<h2>2. Art der Daten und betroffene Personen</h2>
+<ul>
+  <li><b>Daten:</b> Namen, Anschriften, E-Mail-Adressen und Telefonnummern, Umsatzsteuer- und Steuernummern, Bankverbindungen (IBAN, BIC), Rechnungsinhalte (Positionen, Beträge, Daten), Inhalte von E-Mails an die Eingangsadresse, Protokolldaten.</li>
+  <li><b>Betroffene:</b> Lieferanten, Kunden und sonstige Geschäftspartner des Auftraggebers sowie deren Ansprechpartner; Beschäftigte des Auftraggebers, die die Software nutzen.</li>
+</ul>
+
+<h2>3. Weisungen</h2>
+<p>Der Auftragnehmer verarbeitet die Daten nur auf dokumentierte Weisung des Auftraggebers. Als Weisung gelten dieser Vertrag, die AGB und die Bedienung der Software durch den Auftraggeber. Hält der Auftragnehmer eine Weisung für rechtswidrig, informiert er den Auftraggeber unverzüglich.</p>
+
+<h2>4. Vertraulichkeit</h2>
+<p>Alle Personen, die beim Auftragnehmer Zugang zu den Daten haben, sind zur Vertraulichkeit verpflichtet.</p>
+
+<h2>5. Technische und organisatorische Maßnahmen (Art. 32 DSGVO)</h2>
+<ul>
+  <li>Hosting ausschließlich in Rechenzentren in Deutschland.</li>
+  <li>Verschlüsselte Übertragung (HTTPS/TLS; E-Mail-Empfang mit STARTTLS).</li>
+  <li>Passwörter nur als sicherer Hash (scrypt), Sitzungskennungen nur als Hash, gespeicherte Postfach-Zugangsdaten verschlüsselt.</li>
+  <li>Strikte Trennung der Daten verschiedener Kunden (Mandantentrennung in jeder Datenbankabfrage).</li>
+  <li>Originaldateien werden unverändert und mit Prüfsumme (SHA-256) gespeichert; wichtige Aktionen werden protokolliert.</li>
+  <li>Zugriff auf den Server nur für den Auftragnehmer, per Schlüssel; Firewall; regelmäßige Sicherheitsupdates.</li>
+  <li>Regelmäßige Datensicherung.</li>
+</ul>
+
+<h2>6. Unterauftragsverarbeiter</h2>
+<p>Der Auftraggeber stimmt dem Einsatz folgender Unterauftragsverarbeiter zu:</p>
+<ul>
+  <li>netcup GmbH, Karlsruhe, Deutschland – Hosting (Server)</li>
+  {% if sending %}<li>IONOS SE, Montabaur, Deutschland – Versand von E-Mails</li>{% endif %}
+  {% if llm %}<li>Mistral AI SAS, Paris, Frankreich – KI-gestütztes Auslesen von Rechnungen ohne strukturierte Daten</li>{% endif %}
+</ul>
+<p>Über geplante Änderungen informiert der Auftragnehmer mindestens 30 Tage vorher in Textform; der Auftraggeber kann aus wichtigem datenschutzrechtlichen Grund widersprechen und den Vertrag dann kündigen. Der Auftragnehmer verpflichtet Unterauftragsverarbeiter vertraglich auf ein gleichwertiges Schutzniveau. Eine Verarbeitung außerhalb der EU/des EWR findet nicht statt.</p>
+
+<h2>7. Unterstützung des Auftraggebers</h2>
+<p>Der Auftragnehmer unterstützt den Auftraggeber bei Anfragen betroffener Personen (Art. 15–22 DSGVO), bei der Sicherheit der Verarbeitung, bei Meldungen von Datenschutzverletzungen und bei Datenschutz-Folgenabschätzungen, soweit ihm das möglich ist.</p>
+
+<h2>8. Datenschutzverletzungen</h2>
+<p>Der Auftragnehmer meldet dem Auftraggeber Verletzungen des Schutzes personenbezogener Daten unverzüglich, möglichst innerhalb von 24 Stunden nach Kenntnis, mit den ihm vorliegenden Informationen.</p>
+
+<h2>9. Löschung und Rückgabe</h2>
+<p>Nach Vertragsende kann der Auftraggeber seine Daten 30 Tage lang exportieren. Danach löscht der Auftragnehmer die Daten einschließlich Kopien, soweit keine gesetzliche Pflicht zur Speicherung besteht. Datensicherungen werden im regulären Zyklus überschrieben.</p>
+
+<h2>10. Nachweise und Kontrollen</h2>
+<p>Der Auftragnehmer stellt dem Auftraggeber auf Anfrage die Informationen zur Verfügung, die zum Nachweis der Einhaltung dieser Pflichten nötig sind, und ermöglicht Überprüfungen nach vorheriger Anmeldung mit angemessener Frist.</p>
+
+<h2>11. Schlussbestimmungen</h2>
+<p>Bei Widersprüchen geht dieser Vertrag den AGB vor, soweit es um den Schutz personenbezogener Daten geht. Es gilt deutsches Recht.</p>
+{% endblock %}

@@ -141,7 +141,7 @@ def test_not_enabled_without_smtp(setup, monkeypatch):
 
 def test_send_from_invoice_page(smtp, draft):
     c = TestClient(app)
-    c.post("/registrieren", data={"company": "Web GmbH", "email": f"{uuid.uuid4().hex[:8]}@x.de",
+    c.post("/registrieren", data={"accept": "on", "company": "Web GmbH", "email": f"{uuid.uuid4().hex[:8]}@x.de",
                                   "password": "geheim12345!"})
     with SessionLocal() as db:
         org = db.scalars(select(Organization).where(Organization.name == "Web GmbH")).all()[-1]

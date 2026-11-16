@@ -45,6 +45,14 @@ class Settings:
     max_mails_per_day: int = field(default_factory=lambda: int(_env("MAX_MAILS_PER_DAY", "50")))
     imap_poll_minutes: int = field(default_factory=lambda: int(_env("IMAP_POLL_MINUTES", "10")))
 
+    # Operator of the service (Impressum, Datenschutz, AGB, AVV). Kept in .env, not in the code.
+    operator_name: str = field(default_factory=lambda: _env("OPERATOR_NAME"))
+    operator_street: str = field(default_factory=lambda: _env("OPERATOR_STREET"))
+    operator_city: str = field(default_factory=lambda: _env("OPERATOR_CITY"))
+    operator_email: str = field(default_factory=lambda: _env("OPERATOR_EMAIL"))
+    operator_phone: str = field(default_factory=lambda: _env("OPERATOR_PHONE"))
+    operator_small_business: bool = field(default_factory=lambda: _flag("OPERATOR_SMALL_BUSINESS", True))
+
     @property
     def sending_enabled(self) -> bool:
         return bool(self.smtp_host and self.mail_from)

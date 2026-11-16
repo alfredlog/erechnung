@@ -4,10 +4,10 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, public, workspace
+from app.api import auth, legal, public, workspace
 from app.api.deps import WEB_DIR, LoginRequired
 from app.core.config import settings
 from app.core.db import init_db
@@ -24,6 +24,12 @@ app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
 app.include_router(public.router)
 app.include_router(auth.router)
 app.include_router(workspace.router)
+app.include_router(legal.router)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():  # browsers ask for it at the root
+    return FileResponse(WEB_DIR / "static" / "favicon.ico", media_type="image/x-icon")
 
 
 @app.exception_handler(LoginRequired)
