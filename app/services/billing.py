@@ -414,12 +414,41 @@ def handle_event(db: Session, event: dict) -> None:
             db.commit()
 
 
-if __name__ == "__main__":  # python -m app.services.billing setup [--reset-webhook]
-    if len(sys.argv) < 2 or sys.argv[1] != "setup":
-        print("Verwendung: python -m app.services.billing setup [--reset-webhook]")
-        sys.exit(1)
-    try:
-        setup(reset_webhook="--reset-webhook" in sys.argv)
-    except StripeError as exc:
-        print(f"Fehler: {exc}")
+def forget_stripe_data(db: Session) -> int:
+    """Switching test -> live: Stripe ids from test mode do not exist in live mode.
+    Clears them; companies fall back to their trial or Free and can book again."""
+    subs = list(db.scalars(select(Subscription).where(
+        (Subscription.stripe_customer_id != "") | (Subscription.stripe_subscription_id != "") |
+        (Subscription.plan != "free"))))
+    for sub in subs:
+        sub.stripe_customer_id = sub.stripe_subscription_id = sub.status = sub.interval = ""
+        sub.plan, sub.current_period_end, sub.cancel_at_period_end = "free", None, False
+        audit.log(db, sub.organization_id, "stripe_data_reset")
+    db.commit()
+    return len(subs)
+
+
+USAGE = """Verwendung:
+  python -m app.services.billing setup [--reset-webhook]   Produkte, Preise, Portal, Webhook anlegen
+  python -m app.services.billing forget-test-data --yes    Stripe-Daten aus dem Testmodus löschen"""
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "setup":
+        try:
+            setup(reset_webhook="--reset-webhook" in sys.argv)
+        except StripeError as exc:
+            print(f"Fehler: {exc}")
+            sys.exit(1)
+    elif cmd == "forget-test-data":
+        if "--yes" not in sys.argv:
+            print("Löscht bei ALLEN Firmen Stripe-Kunden- und Abo-Daten (Tarif -> Test bzw. Free).\n"
+                  "Nur beim Wechsel von Test- auf Live-Modus nötig. Bestätigen mit --yes")
+            sys.exit(1)
+        from app.core.db import SessionLocal, init_db
+        init_db()
+        with SessionLocal() as db:
+            print(f"{forget_stripe_data(db)} Firma(en) zurückgesetzt.")
+    else:
+        print(USAGE)
         sys.exit(1)

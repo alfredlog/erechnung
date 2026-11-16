@@ -281,3 +281,16 @@ def test_plan_page(fake_stripe):
     assert 'id="preise"' in landing and "39 €" in landing
     with SessionLocal() as db:
         assert db.scalar(select(User).limit(1)) is not None
+
+
+def test_forget_test_data_before_going_live(fake_stripe):
+    db, _u, org = _org()
+    billing.apply_subscription(db, {"id": "sub_t", "customer": "cus_test", "status": "active",
+                                    "metadata": {"org_id": str(org.id)},
+                                    "items": {"data": [{"price": {"lookup_key": "erechnung_start_month"}}]}})
+    assert billing.effective_plan(db, org).key == "start"
+    assert billing.forget_stripe_data(db) >= 1
+    sub = billing.subscription(db, org)
+    assert (sub.stripe_customer_id, sub.plan, sub.status) == ("", "free", "")
+    assert billing.effective_plan(db, org).key == "business"          # trial still running
+    db.close()

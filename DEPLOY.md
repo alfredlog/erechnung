@@ -83,6 +83,10 @@ docker compose run --rm api python -m app.services.billing setup
 docker compose up -d api worker
 ```
 
+Going live (test -> live): put `STRIPE_SECRET_KEY=sk_live_…` in `.env`, rebuild, then
+`docker compose run --rm api python -m app.services.billing forget-test-data --yes` (test-mode customer
+ids do not exist in live mode) and `… billing setup` again. Put the new live `whsec_…` in `.env`.
+
 Run the command again after changing prices: new prices are created and take over the lookup keys,
 existing subscribers keep their price until they change plan. `--reset-webhook` recreates the
 webhook (new secret). Test cards: 4242 4242 4242 4242, any future date, any CVC.
